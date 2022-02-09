@@ -2,10 +2,9 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { CheckIcon } from '@radix-ui/react-icons';
-import { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Header } from '../../components/Header';
 import InputOrder from '../../components/InputOrder';
-
 import {
     Container,
     Nav,
@@ -27,17 +26,19 @@ import {
     RadioGroup,
     Checkbox,
     CheckboxIndicator,
+    AddButton,
+    AddIcon,
 } from './styles';
 import Button from '../../components/Button';
 import ProductOrder from '../../components/ProductOrder';
+import Divider from '../../components/Divider';
+import Footer from '../../components/Footer';
+import { formatPrice } from '../../util/format';
+import { useOrder } from '../../hooks/useOrder';
+import DialogAddProductOrder from '../../components/DialogAddProductOrder';
+import stringToNumber from '../../util/stringToNumber';
 
 const addOrderFormSchema = yup.object().shape({});
-
-interface Item {
-    name: string;
-    price: number;
-    quantity: number;
-}
 
 export default function Order() {
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
@@ -45,18 +46,55 @@ export default function Order() {
             resolver: yupResolver(addOrderFormSchema),
         });
     const { errors } = formState;
-    const [itens, setItens] = useState<Item[]>([
-        {
-            name: 'Cento de Salgado',
-            price: 10.9,
-            quantity: 2,
+
+    const {
+        order: itens,
+        total: totalNumber,
+        setDiscount,
+        setDelivery,
+        delivery: deliveryTotal,
+        discount: discountTotal,
+    } = useOrder();
+
+    const deliveryFormatted = useMemo(
+        () => formatPrice(deliveryTotal),
+        [deliveryTotal],
+    );
+
+    const discountFormatted = useMemo(
+        () => formatPrice(discountTotal),
+        [discountTotal],
+    );
+
+    const itensFormatted = useMemo(
+        () =>
+            itens.map(item => ({
+                ...item,
+                priceFormatted: formatPrice(item.price),
+                subTotal: formatPrice(item.price * item.quantity),
+            })),
+        [itens],
+    );
+
+    const handleDiscountBlur = useCallback(
+        event => {
+            event.preventDefault();
+            const discount = stringToNumber(event.target.value);
+            setDiscount(discount);
         },
-        {
-            name: 'Coca Cola',
-            price: 7,
-            quantity: 5,
+        [setDiscount],
+    );
+
+    const handleDeliveryBlur = useCallback(
+        event => {
+            event.preventDefault();
+            const delivery = stringToNumber(event.target.value);
+            setDelivery(delivery);
         },
-    ]);
+        [setDelivery],
+    );
+
+    const total = useMemo(() => formatPrice(totalNumber), [totalNumber]);
 
     return (
         <>
@@ -196,6 +234,7 @@ export default function Order() {
                             <InputOrder
                                 name="deliverydate"
                                 label="Data de Entrega"
+                                type="date"
                                 error={errors.deliverydate}
                                 setFocus={setFocus}
                                 register={register}
@@ -214,10 +253,12 @@ export default function Order() {
                         <InputOrder
                             name="deliveryprice"
                             label="Valor da Entrega"
+                            type="currency"
                             error={errors.deliveryhour}
+                            onBlur={handleDeliveryBlur}
                             setFocus={setFocus}
                             register={register}
-                            style={{ width: '15.625rem' }}
+                            style={{ width: '14.5rem' }}
                         />
                     </ContainerLineInput>
                     <Flex style={{ justifyContent: 'space-between' }}>
@@ -308,10 +349,12 @@ export default function Order() {
                         <InputOrder
                             name="discount"
                             label="Valor do Desconto"
-                            error={errors.deliveryhour}
+                            type="currency"
+                            error={errors.discount}
+                            onBlur={handleDiscountBlur}
                             setFocus={setFocus}
                             register={register}
-                            style={{ width: '15.625rem' }}
+                            style={{ width: '14.5rem' }}
                         />
                     </Flex>
                     <Button containerStyle={{ marginTop: '1rem' }}>
@@ -346,22 +389,120 @@ export default function Order() {
                         <ChangeSeller>ALTERAR</ChangeSeller>
                     </Container>
                     <Container
-                        style={{ flexDirection: 'column', alignItems: 'start' }}
+                        style={{
+                            flexDirection: 'column',
+                            alignItems: 'start',
+                            justifyContent: 'space-between',
+                            height: '85%',
+                            boxSizing: 'border-box',
+                            boxShadow: '3px 3px 3px 2px rgba(0, 0, 0, 0.25)',
+                        }}
                     >
-                        <TitleTotal>Seu Pedido</TitleTotal>
-                        {itens.map(item => (
-                            <ProductOrder
-                                key={item.name}
-                                name={item.name}
-                                price={item.price}
-                                quantity={item.quantity}
-                                itens={itens}
-                                setItens={setItens}
-                            />
+                        <Flex
+                            style={{
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                width: '95%',
+                            }}
+                        >
+                            <TitleTotal>Seu Pedido</TitleTotal>
+                            <DialogAddProductOrder>
+                                <AddButton>
+                                    <AddIcon />
+                                </AddButton>
+                            </DialogAddProductOrder>
+                        </Flex>
+
+                        <Divider
+                            style={{
+                                marginTop: '0.5rem',
+                                marginLeft: '1rem',
+                                marginRight: '1rem',
+                                width: '90%',
+                            }}
+                        />
+                        {itensFormatted.map(item => (
+                            <React.Fragment key={item.name}>
+                                <ProductOrder
+                                    key={item.name}
+                                    name={item.name}
+                                    price={item.price}
+                                    priceFormatted={item.priceFormatted}
+                                    quantity={item.quantity}
+                                />
+                                <Divider
+                                    style={{
+                                        marginLeft: '1rem',
+                                        marginRight: '1rem',
+                                        width: '90%',
+                                    }}
+                                />
+                            </React.Fragment>
                         ))}
+                        <Divider
+                            style={{
+                                marginLeft: '1rem',
+                                marginRight: '1rem',
+                                width: '90%',
+                                marginTop: 'auto',
+                            }}
+                        />
+                        <Flex
+                            style={{
+                                margin: '1rem 0 0 1rem',
+                                width: '90%',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <p>Entrega:</p>
+                            <strong>{deliveryFormatted}</strong>
+                        </Flex>
+                        <Flex
+                            style={{
+                                margin: '1rem 0 0 1rem',
+                                width: '90%',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <p>Desconto:</p>
+                            <strong>{discountFormatted}</strong>
+                        </Flex>
+                        <Divider
+                            style={{
+                                marginLeft: '1rem',
+                                marginRight: '1rem',
+                                width: '90%',
+                                marginTop: '1rem',
+                            }}
+                        />
+                        <Flex
+                            style={{
+                                margin: '1rem 0 1rem 1rem',
+                                width: '90%',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <Label
+                                style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: '500',
+                                }}
+                            >
+                                Total:
+                            </Label>
+                            <Label
+                                style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                {total}
+                            </Label>
+                        </Flex>
                     </Container>
                 </ContainerRight>
             </Nav>
+            <Footer />
         </>
     );
 }

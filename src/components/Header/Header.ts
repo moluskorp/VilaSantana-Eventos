@@ -5,20 +5,18 @@ import avatarImg from '../../assets/profile.jpg';
 export const Nav = styled.div`
     display: flex;
     justify-content: center;
-    height: 80px;
+    height: 40px;
     background-color: #fff;
-    border-bottom: 1px solid rgba(0,0,0,0.3);
-
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
 `;
 
 export const Content = styled.div`
-    width: 1440px;
+    width: 1140px;
     height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-direction: row;
-    
 `;
 
 export const Logo = styled.img`

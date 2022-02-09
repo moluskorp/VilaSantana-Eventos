@@ -7,13 +7,14 @@ import avatarImg from '../../assets/profile.jpg';
 
 import clientIcon from '../../assets/client.svg';
 import homeIcon from '../../assets/home.svg';
+import addIcon from '../../assets/add-white.svg';
 
 export const Nav = styled.div`
     flex: 1;
     width: 73rem;
     height: 830px;
     margin: auto;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 1.25rem;
     display: flex;
@@ -21,9 +22,7 @@ export const Nav = styled.div`
     justify-content: space-between;
 `;
 
-export const ContainerRight = styled.div`
-    background-color: rgba(0, 0, 0, 0.2);
-`;
+export const ContainerRight = styled.div``;
 
 export const ContainerLeft = styled.div`
     color: black;
@@ -97,6 +96,14 @@ export const ClientIcon = styled.div`
     margin: 16px 0 16px 0;
 
     margin-left: 1rem;
+`;
+
+export const AddIcon = styled.div`
+    background: url(${addIcon}) no-repeat center;
+    width: 2.5rem;
+    height: 2.5rem;
+
+    margin: 16px 0 16px 0;
 `;
 
 export const HomeIcon = styled.div`
@@ -182,4 +189,16 @@ export const Checkbox = styled(CheckboxPrimitive.Root)`
 export const CheckboxIndicator = styled(CheckboxPrimitive.Indicator)`
     color: black;
     margin-top: 0.25rem;
+`;
+
+export const AddButton = styled.button`
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: ${props => props.theme.blue};
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    border-radius: 10px;
+    box-shadow: 2px 2px 3px 1px rgba(92, 166, 191, 0.35);
 `;

@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useOrder } from '../../hooks/useOrder';
+import { formatPrice } from '../../util/format';
 import {
     AddIcon,
     Container,
@@ -8,43 +10,42 @@ import {
     TrashIcon,
 } from './style';
 
-interface Item {
-    name: string;
-    price: number;
-    quantity: number;
-}
-
 interface ProductOrderProps {
     name: string;
     price: number;
+    priceFormatted: string;
     quantity: number;
-    itens: Item[];
-    setItens: (item: Item[]) => void;
 }
 
 export default function ProductOrder({
     name,
     price,
     quantity: quantityCreated,
-    itens,
-    setItens,
+    priceFormatted,
 }: ProductOrderProps) {
     const [quantity, setQuantity] = useState(quantityCreated);
+    const { updateItemAmount, removeItem } = useOrder();
 
-    const total = useMemo(() => quantity * price, [quantity, price]);
+    const total = useMemo(
+        () => formatPrice(quantity * price),
+        [quantity, price],
+    );
 
     const handleAddQuantity = useCallback(() => {
-        setQuantity(quantity + 1);
-    }, [quantity]);
+        const amount = quantity + 1;
+        updateItemAmount({ name, amount });
+        setQuantity(amount);
+    }, [name, quantity, updateItemAmount]);
 
     const handleRemoveQuantity = useCallback(() => {
-        setQuantity(quantity - 1);
-    }, [quantity]);
+        const amount = quantity - 1;
+        updateItemAmount({ name, amount });
+        setQuantity(amount);
+    }, [name, quantity, updateItemAmount]);
 
     const handleRemoveItem = useCallback(() => {
-        const newItens = itens.filter(item => item.name !== name);
-        setItens(newItens);
-    }, [setItens, itens, name]);
+        removeItem(name);
+    }, [removeItem, name]);
 
     return (
         <Container>
@@ -64,7 +65,7 @@ export default function ProductOrder({
                 }}
             >
                 <Flex>
-                    <p>Valor:</p> <h4>R${price}</h4>
+                    <p>Valor:</p> <h4>{priceFormatted}</h4>
                 </Flex>
                 <Flex>
                     <p>Qtd:</p> <h4>{quantity}</h4>
@@ -88,7 +89,7 @@ export default function ProductOrder({
                         textAlign: 'right',
                     }}
                 >
-                    R$ {total}
+                    {total}
                 </Label>
             </Flex>
         </Container>

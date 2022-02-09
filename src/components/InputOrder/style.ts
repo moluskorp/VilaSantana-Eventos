@@ -13,6 +13,7 @@ export const Container = styled.div<ContainerProps>`
     margin-top: 0.5rem;
     border: 1px solid;
     height: 30px;
+    width: 100%;
 
     border-color: ${props =>
         props.isFocused ? props.theme.blue : props.theme.pink};
@@ -36,23 +37,30 @@ export const Container = styled.div<ContainerProps>`
 
     > span {
         font-size: 1rem;
+        margin-left: 200px;
+        color: red;
     }
 `;
 
 export const ErrorMessage = styled.text`
     color: red;
-    font-size: 1rem;
+    font-size: 0.75rem;
 
     align-self: start;
     margin-left: 10%;
 `;
 
 export const ContainerInput = styled.div<ContainerProps>`
+    width: 100%;
+    margin-left: 0.25rem;
     input {
-        height: 30px;
         background-color: transparent;
-        margin-left: 0.5rem;
-        width: 100%;
+        height: 30px;
+        margin-left: 0.25rem;
         font-weight: 500;
     }
+`;
+
+export const Flex = styled.div`
+    display: flex;
 `;
