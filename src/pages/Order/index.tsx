@@ -37,6 +37,7 @@ import { formatPrice } from '../../util/format';
 import { useOrder } from '../../hooks/useOrder';
 import DialogAddProductOrder from '../../components/DialogAddProductOrder';
 import stringToNumber from '../../util/stringToNumber';
+import DialogSearchClient from '../../components/DialogSearchClient';
 
 const addOrderFormSchema = yup.object().shape({});
 
@@ -76,7 +77,7 @@ export default function Order() {
         [itens],
     );
 
-    const handleDiscountBlur = useCallback(
+    const handleDiscountChange = useCallback(
         event => {
             event.preventDefault();
             const discount = stringToNumber(event.target.value);
@@ -85,7 +86,7 @@ export default function Order() {
         [setDiscount],
     );
 
-    const handleDeliveryBlur = useCallback(
+    const handleDeliveryChange = useCallback(
         event => {
             event.preventDefault();
             const delivery = stringToNumber(event.target.value);
@@ -112,7 +113,9 @@ export default function Order() {
                                 <strong>399.075.378-96</strong>
                             </div>
                         </ContainerVendedor>
-                        <ChangeSeller>ALTERAR</ChangeSeller>
+                        <DialogSearchClient>
+                            <ChangeSeller>ALTERAR</ChangeSeller>
+                        </DialogSearchClient>
                     </ContainerMaior>
                     <ContainerMaior>
                         <HomeIcon />
@@ -130,6 +133,7 @@ export default function Order() {
                         <InputOrder
                             name="whats"
                             label="Celular/WhatsApp"
+                            type="telephone"
                             error={errors.whats}
                             setFocus={setFocus}
                             register={register}
@@ -185,6 +189,7 @@ export default function Order() {
                             name="postalcode"
                             label="CEP"
                             error={errors.postalcode}
+                            type="postalcode"
                             setFocus={setFocus}
                             register={register}
                             style={{ width: '15.625rem' }}
@@ -244,6 +249,7 @@ export default function Order() {
                             <InputOrder
                                 name="deliveryhour"
                                 label="Horário"
+                                type="time"
                                 error={errors.deliveryhour}
                                 setFocus={setFocus}
                                 register={register}
@@ -255,7 +261,7 @@ export default function Order() {
                             label="Valor da Entrega"
                             type="currency"
                             error={errors.deliveryhour}
-                            onBlur={handleDeliveryBlur}
+                            onChange={handleDeliveryChange}
                             setFocus={setFocus}
                             register={register}
                             style={{ width: '14.5rem' }}
@@ -351,7 +357,7 @@ export default function Order() {
                             label="Valor do Desconto"
                             type="currency"
                             error={errors.discount}
-                            onBlur={handleDiscountBlur}
+                            onChange={handleDiscountChange}
                             setFocus={setFocus}
                             register={register}
                             style={{ width: '14.5rem' }}

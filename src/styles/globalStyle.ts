@@ -12,6 +12,7 @@ export const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+        font-family: 'Roboto', 'sans-serif';
     }
 
     html {
@@ -30,7 +31,7 @@ export const GlobalStyle = createGlobalStyle`
             -webkit-font-smoothing: antialiased;
         }
 
-        body, input, textarea, button {
+        body, input, textarea, button, label {
             font-family: 'Roboto', 'sans-serif';
             font-weight: 400;
             outline: 0;

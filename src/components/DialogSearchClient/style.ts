@@ -23,7 +23,7 @@ export const StyledContent = styled(DialogPrimitive.Content)`
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90vw;
-    max-width: 450px;
+    max-width: 62.5rem;
     max-height: 85vh;
     padding: 25px;
 
@@ -71,4 +71,30 @@ export const CloseIcon = styled.button`
     position: absolute;
     top: 10px;
     right: 10px;
+`;
+
+export const Table = styled.table`
+    width: 100%;
+    border-collapse: collapse;
+
+    td, th {
+        border 1px solid rgba(0,0,0,0.3);
+        text-align: left;
+        padding: 0.5rem;
+
+
+    }
+
+    tr:nth-child(even) {
+        background-color: #ddd;
+    }
+
+    tr {
+        & + tr {
+            &:hover {
+            background-color: rgba(0,0,0,0.3);
+            cursor: pointer;
+            }
+        }
+    }
 `;

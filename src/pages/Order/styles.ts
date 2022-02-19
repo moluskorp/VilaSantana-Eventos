@@ -58,11 +58,12 @@ export const ContainerMaior = styled.div`
     align-items: center;
 `;
 
-export const ChangeSeller = styled.h4`
+export const ChangeSeller = styled.button`
     margin-left: auto;
     margin-right: 1rem;
     font-size: 1rem;
     font-weight: 500;
+    background: transparent;
 
     color: ${props => props.theme.pink};
 `;

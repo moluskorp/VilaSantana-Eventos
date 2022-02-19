@@ -102,40 +102,8 @@ export default function DialogAddProductOrder({ children, ...props }) {
                 setValue('quantity', '');
             }
         },
-        [addItem],
+        [addItem, setValue],
     );
-
-    /* const handleSubmit = useCallback(async (data: AddProductFormData) => {
-        try {
-            formRef.current?.setErrors({});
-            const { name, price, quantity } = data;
-            const nameIsEmpty = name.trim() === '';
-            const priceIsEmpty = name.trim() === '';
-            const quantityIsEmpty = name.trim() === '';
-            if (nameIsEmpty) {
-                setError('name', {
-                    type: 'error',
-                    message: 'Descrição deve ser preenchida',
-                });
-            }
-            if (priceIsEmpty) {
-                setError('price', {
-                    type: 'error',
-                    message: 'Preço deve ser preenchido',
-                });
-            }
-            if (quantityIsEmpty) {
-                setError('quantity', {
-                    type: 'error',
-                    message: 'Quantidade deve ser preenchida',
-                });
-            }
-            const product = { name, price, quantity };
-            // handleSaveProcut(product);
-        } catch (err) {
-            console.log(err.message);
-        }
-    }, []); */
 
     return (
         <Dialog>

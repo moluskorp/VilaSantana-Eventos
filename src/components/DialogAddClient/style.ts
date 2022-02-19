@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import * as LabelPrimitive from '@radix-ui/react-label';
+import { Form as UnForm } from '@unform/web';
 
 import closeIcon from '../../assets/close.svg';
 
@@ -14,6 +15,10 @@ export const StyledOverlay = styled(DialogPrimitive.Overlay)`
     }
 `;
 
+export const Form = styled(UnForm)`
+    width: 100%;
+`;
+
 export const StyledContent = styled(DialogPrimitive.Content)`
     background-color: white;
     border-radius: 6px;
@@ -23,7 +28,7 @@ export const StyledContent = styled(DialogPrimitive.Content)`
     left: 50%;
     transform: translate(-50%, -50%);
     width: 90vw;
-    max-width: 450px;
+    max-width: 580px;
     max-height: 85vh;
     padding: 25px;
 
@@ -52,6 +57,7 @@ export const StyledDescription = styled(DialogPrimitive.Description)`
 
 export const Flex = styled.div`
     display: flex;
+    width: 100%;
 `;
 
 export const Label = styled(LabelPrimitive.Root)`

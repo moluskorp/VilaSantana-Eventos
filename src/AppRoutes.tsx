@@ -1,5 +1,6 @@
 import { Routes, Route, BrowserRouter as Router } from 'react-router-dom';
-import { Login } from './pages/Login';
+import Home from './pages/Home';
+import Login from './pages/Login';
 import Order from './pages/Order';
 
 export default function AppRoutes() {
@@ -7,7 +8,8 @@ export default function AppRoutes() {
         <Router>
             <Routes>
                 <Route path="/oi" element={<Order />} />
-                <Route path="/" element={<Login />} />
+                <Route path="/Login" element={<Login />} />
+                <Route path="/home" element={<Home />} />
             </Routes>
         </Router>
     );

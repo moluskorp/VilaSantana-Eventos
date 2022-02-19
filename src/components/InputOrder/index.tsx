@@ -11,7 +11,17 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     name: string;
     label?: string;
     error?: FieldError;
-    type?: 'currency' | 'normal' | 'integer' | 'float' | 'date';
+    type?:
+        | 'currency'
+        | 'normal'
+        | 'integer'
+        | 'float'
+        | 'date'
+        | 'time'
+        | 'telephone'
+        | 'postalcode'
+        | 'password'
+        | 'email';
     containerStyle?: object;
     setFocus: (input: string) => void;
     register: (field: string) => void;
@@ -41,35 +51,76 @@ export default function InputOrder({
         setFocus(name);
     }
 
-    function handleInputNumber(event) {
-        const { value } = event.target;
-        if (type === 'integer') {
-            if (!/[0-9]/.test(event.key)) {
-                event.preventDefault();
-            }
-        } else if (type === 'currency' || type === 'float') {
-            if (!/[0-9]|,/.test(event.key)) {
-                event.preventDefault();
-            }
-            const havePoint = value.indexOf(',');
-            if (havePoint > 0) {
-                if (event.key === ',') {
+    const handleInputNumber = useCallback(
+        (event: {
+            target: HTMLInputElement;
+            key: string;
+            preventDefault: () => void;
+            currentTarget: {
+                maxLength: number;
+            };
+        }) => {
+            let { value } = event.target;
+            if (type === 'integer') {
+                if (!/[0-9]/.test(event.key)) {
                     event.preventDefault();
                 }
+            } else if (type === 'currency' || type === 'float') {
+                if (!/[0-9]|,/.test(event.key)) {
+                    event.preventDefault();
+                }
+                const havePoint = value.indexOf(',');
+                if (havePoint > 0) {
+                    if (event.key === ',') {
+                        event.preventDefault();
+                    }
+                }
+            } else if (type === 'time') {
+                event.target.maxLength = 5;
+                const notANumber = event.key.search(/\D/g) > -1;
+                if (notANumber) {
+                    event.preventDefault();
+                } else {
+                    value = value.replace(/^(\d{2})(\d)/, '$1:$2');
+                    event.target.value = value;
+                }
+            } else if (type === 'telephone') {
+                event.target.maxLength = 17;
+                const notANumber = event.key.search(/\D/g) > -1;
+                if (notANumber) {
+                    event.preventDefault();
+                } else {
+                    value = value.replace(/^(\d{2})(\d{5})/, '($1) $2 - ');
+                    event.target.value = value;
+                }
+            } else if (type === 'postalcode') {
+                event.target.maxLength = 11;
+                const notANumber = event.key.search(/\D/g) > -1;
+                if (notANumber) {
+                    event.preventDefault();
+                } else {
+                    value = value.replace(/^(\d{5})(\d)/, '$1 - $2');
+                    event.target.value = value;
+                }
             }
-        }
-    }
+        },
+        [type],
+    );
 
-    function formatDateInput(date: Date, format: string, locale: string) {
-        console.log(date);
-        console.log(format);
-        console.log(locale);
+    function formatDateInput(date: Date) {
         return formatDate(date);
     }
 
+    const placeHolder =
+        type === 'time'
+            ? '00:00'
+            : type === 'postalcode'
+            ? '00000 - 000'
+            : type === 'telephone' && '(00) 00000 - 0000';
+
     return (
         <Nav>
-            <span>{label}</span>
+            <label htmlFor={name}>{label}</label>
             <Container
                 style={containerStyle}
                 isInvalid={!!error}
@@ -84,7 +135,16 @@ export default function InputOrder({
                     {type !== 'date' ? (
                         <input
                             name={name}
+                            id={name}
                             {...register(name)}
+                            type={
+                                type === 'password'
+                                    ? 'password'
+                                    : type === 'email'
+                                    ? 'email'
+                                    : ''
+                            }
+                            placeHolder={placeHolder}
                             onKeyPress={event => {
                                 handleInputNumber(event);
                             }}
