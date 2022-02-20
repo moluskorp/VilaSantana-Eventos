@@ -17,6 +17,7 @@ import {
 } from './styles';
 import Button from '../../components/Button';
 import useAuth from '../../hooks/useAuth';
+import errorResolverFirebase from '../../util/errorResolverFirebase';
 
 type FormValues = {
     email: string;
@@ -25,7 +26,7 @@ type FormValues = {
 
 export default function Login() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, loginWithEmail } = useAuth();
     const formRef = useRef<FormHandles>(null);
 
     const schema = yup.object().shape({
@@ -75,12 +76,19 @@ export default function Login() {
         });
     const { errors } = formState;
 
-    function handleLogin() {
+    async function handleLogin() {
         // navigate('/oi');
         handleSubmit(async data => {
-            const { email, password } = data;
-            console.log(email);
-            console.log(password);
+            try {
+                const { email, password } = data;
+                console.log(email);
+                console.log(password);
+                await loginWithEmail(email, password);
+                console.log(user);
+            } catch (err) {
+                const error = errorResolverFirebase(err);
+                alert(error);
+            }
         })();
     }
 

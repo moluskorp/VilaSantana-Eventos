@@ -2,8 +2,9 @@ import { SubmitHandler, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { CheckIcon } from '@radix-ui/react-icons';
-import React, { useCallback, useMemo, useState } from 'react';
-import { Header } from '../../components/Header';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Header from '../../components/Header';
 import InputOrder from '../../components/InputOrder';
 import {
     Container,
@@ -38,15 +39,25 @@ import { useOrder } from '../../hooks/useOrder';
 import DialogAddProductOrder from '../../components/DialogAddProductOrder';
 import stringToNumber from '../../util/stringToNumber';
 import DialogSearchClient from '../../components/DialogSearchClient';
+import useAuth from '../../hooks/useAuth';
 
 const addOrderFormSchema = yup.object().shape({});
 
 export default function Order() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
         useForm({
             resolver: yupResolver(addOrderFormSchema),
         });
     const { errors } = formState;
+
+    useEffect(() => {
+        if (!user) {
+            navigate('/Login');
+        }
+    }, [user, navigate]);
 
     const {
         order: itens,

@@ -30,4 +30,5 @@ export const Avatar = styled.div`
     width: 50px;
     height: 50px;
     border-radius: 9999px;
+    cursor: pointer;
 `;
