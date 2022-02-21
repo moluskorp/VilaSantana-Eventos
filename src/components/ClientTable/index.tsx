@@ -1,3 +1,4 @@
+import { useClient } from '../../hooks/useClient';
 import Divider from '../Divider';
 import {
     Container,
@@ -20,6 +21,10 @@ const listClient = [
         number: '171',
         district: 'Campos Eliseos',
         whatsapp: '(16) 99604 - 0016',
+        cpf: '399.075.378-96',
+        complement: '',
+        city: 'Ribeirão Preto',
+        cep: '14080-720',
     },
     {
         name: 'Neusa Ribeiro Baratella',
@@ -27,6 +32,10 @@ const listClient = [
         number: '188',
         district: 'Campos Eliseos',
         whatsapp: '(16) 99604 - 1234',
+        cpf: '040.761.838-43',
+        complement: '',
+        city: 'Ribeirão Preto',
+        cep: '14080-720',
     },
     {
         name: 'Carlos Cesar Baratella',
@@ -34,10 +43,32 @@ const listClient = [
         number: '239',
         district: 'Campos Eliseos',
         whatsapp: '(16) 99604 - 1478',
+        cpf: '039.574.157-78',
+        complement: '',
+        city: 'Ribeirão Preto',
+        cep: '14080-720',
     },
 ];
 
+type Client = {
+    name: string;
+    address: string;
+    number: string;
+    district: string;
+    whatsapp: string;
+    cpf: string;
+    complement: string;
+    city: string;
+    cep: string;
+};
+
 export default function ClientTable() {
+    const { changeClient } = useClient();
+
+    function handleSelectClient(client: Client) {
+        changeClient(client);
+    }
+
     return (
         <Container>
             <Flex
@@ -70,7 +101,7 @@ export default function ClientTable() {
                         marginTop: '0.5rem',
                     }}
                     onClick={() => {
-                        console.log(`Clicou em ${client.name}`);
+                        handleSelectClient(client);
                     }}
                 >
                     <DivName>

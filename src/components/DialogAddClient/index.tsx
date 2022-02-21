@@ -1,6 +1,6 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { FormHandles } from '@unform/core';
-import { useCallback, useRef } from 'react';
+import { ReactNode, useCallback, useRef } from 'react';
 import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import {
@@ -14,8 +14,30 @@ import {
 } from './style';
 import Button from '../Button';
 import InputOrder from '../InputOrder';
+import errorResolverFirebase from '../../util/errorResolverFirebase';
+import { useClient } from '../../hooks/useClient';
 
-function Content({ children, ...props }) {
+type FormValues = {
+    cpf: string;
+    name: string;
+    whatsapp: string;
+    address: string;
+    number: string;
+    district: string;
+    complement: string;
+    city: string;
+    postalcode: string;
+};
+
+interface DialogAddClientProps {
+    children: ReactNode;
+}
+
+interface ContentProps {
+    children: ReactNode;
+}
+
+function Content({ children, ...props }: ContentProps) {
     return (
         <DialogPrimitive.Portal>
             <StyledOverlay />
@@ -24,7 +46,11 @@ function Content({ children, ...props }) {
     );
 }
 
-export default function DialogAddClient({ children, ...props }) {
+export default function DialogAddClient({
+    children,
+    ...props
+}: DialogAddClientProps) {
+    const { changeClient, client } = useClient();
     const formRef = useRef<FormHandles>(null);
     const Dialog = DialogPrimitive.Root;
     const DialogTrigger = DialogPrimitive.Trigger;
@@ -34,15 +60,9 @@ export default function DialogAddClient({ children, ...props }) {
     const DialogClose = DialogPrimitive.Close;
 
     const schema = yup.object().shape({
-        name: yup.string().required('Descrição Obrigatória'),
-        price: yup
-            .number()
-            .positive('Preço não pode ser negativo')
-            .required('Preço obrigatório'),
-        quantity: yup
-            .number()
-            .positive('Quantidade deve ser positiva')
-            .required('Quantidade obrigatória'),
+        name: yup.string().required('Nome Obrigatório'),
+        address: yup.string().required('Favor preencher o endereço'),
+        cpf: yup.string().required('Favor preencher o cpf'),
     });
 
     const useYupValidationResolver = schemaOn =>
@@ -76,11 +96,23 @@ export default function DialogAddClient({ children, ...props }) {
         );
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
-        useForm({
+        useForm<FormValues>({
             resolver: useYupValidationResolver(schema),
         });
 
     const { errors } = formState;
+
+    async function handleAddClient() {
+        handleSubmit(async data => {
+            try {
+                // Mandar pro firebase
+                changeClient(data);
+            } catch (err) {
+                const error = errorResolverFirebase(err);
+                alert(error);
+            }
+        })();
+    }
 
     return (
         <Dialog>
@@ -91,7 +123,7 @@ export default function DialogAddClient({ children, ...props }) {
                     Preencha os campos para adicionar um novo cliente
                 </DialogDescription>
 
-                <Form ref={formRef}>
+                <Form ref={formRef} onSubmit={handleAddClient}>
                     <Flex>
                         <InputOrder
                             name="cpf"
@@ -194,6 +226,7 @@ export default function DialogAddClient({ children, ...props }) {
                                 marginTop: '2rem',
                                 marginLeft: 'auto',
                             }}
+                            type="submit"
                         >
                             Adicionar novo cliente
                         </Button>

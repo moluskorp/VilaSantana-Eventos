@@ -1,4 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { ReactNode, useEffect } from 'react';
+import { useClient } from '../../hooks/useClient';
+import { useModal } from '../../hooks/useModal';
 import Button from '../Button';
 import ClientTable from '../ClientTable';
 import DialogAddClient from '../DialogAddClient';
@@ -11,7 +14,11 @@ import {
     StyledTitle,
 } from './style';
 
-function Content({ children, ...props }) {
+interface ContentProps {
+    children: ReactNode;
+}
+
+function Content({ children, ...props }: ContentProps) {
     return (
         <DialogPrimitive.Portal>
             <StyledOverlay />
@@ -20,16 +27,30 @@ function Content({ children, ...props }) {
     );
 }
 
-export default function DialogSearchClient({ children, ...props }) {
+export default function DialogSearchClient() {
+    const { open, setOpen } = useModal();
+    const { client } = useClient();
     const Dialog = DialogPrimitive.Root;
-    const DialogTrigger = DialogPrimitive.Trigger;
+    // const DialogTrigger = DialogPrimitive.Trigger;
     const DialogContent = Content;
     const DialogTitle = StyledTitle;
     const DialogDescription = StyledDescription;
     const DialogClose = DialogPrimitive.Close;
+
+    useEffect(() => {
+        console.log('passou aqui no modal');
+    }, [open]);
+
+    function handleCloseModal() {
+        if (client) {
+            setOpen(false);
+        } else {
+            alert('Primeiro selecione um cliente');
+        }
+    }
+
     return (
-        <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
+        <Dialog open={open}>
             <DialogContent>
                 <DialogTitle>Buscar um Cliente</DialogTitle>
                 <DialogDescription>
@@ -49,18 +70,15 @@ export default function DialogSearchClient({ children, ...props }) {
                             Cadastrar novo cliente
                         </Button>
                     </DialogAddClient>
-                    <DialogClose asChild>
-                        <Button
-                            buttonType="outline"
-                            containerStyle={{ marginLeft: '1rem' }}
-                        >
-                            Cancelar
-                        </Button>
-                    </DialogClose>
+                    <Button
+                        buttonType="outline"
+                        containerStyle={{ marginLeft: '1rem' }}
+                        onClick={handleCloseModal}
+                    >
+                        Cancelar
+                    </Button>
                 </Flex>
-                <DialogClose asChild>
-                    <CloseIcon />
-                </DialogClose>
+                <CloseIcon onClick={handleCloseModal} />
             </DialogContent>
         </Dialog>
     );

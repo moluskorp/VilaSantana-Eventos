@@ -77,14 +77,10 @@ export default function Login() {
     const { errors } = formState;
 
     async function handleLogin() {
-        // navigate('/oi');
         handleSubmit(async data => {
             try {
                 const { email, password } = data;
-                console.log(email);
-                console.log(password);
                 await loginWithEmail(email, password);
-                console.log(user);
             } catch (err) {
                 const error = errorResolverFirebase(err);
                 alert(error);
