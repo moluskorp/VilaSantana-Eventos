@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { FormHandles } from '@unform/core';
 import { ReactNode, useCallback, useRef } from 'react';
+import { set, ref } from 'firebase/database';
 import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import {
@@ -18,6 +19,7 @@ import errorResolverFirebase from '../../util/errorResolverFirebase';
 import { useClient } from '../../hooks/useClient';
 
 type FormValues = {
+    id: string;
     cpf: string;
     name: string;
     whatsapp: string;
@@ -50,7 +52,14 @@ export default function DialogAddClient({
     children,
     ...props
 }: DialogAddClientProps) {
-    const { changeClient, client } = useClient();
+    const {
+        changeClient,
+        client,
+        saveClientOnDb,
+        selectClientListOnDb,
+        selectClientOnDb,
+    } = useClient();
+
     const formRef = useRef<FormHandles>(null);
     const Dialog = DialogPrimitive.Root;
     const DialogTrigger = DialogPrimitive.Trigger;
@@ -105,8 +114,9 @@ export default function DialogAddClient({
     async function handleAddClient() {
         handleSubmit(async data => {
             try {
-                // Mandar pro firebase
                 changeClient(data);
+                await saveClientOnDb();
+                // Mandar pro firebase
             } catch (err) {
                 const error = errorResolverFirebase(err);
                 alert(error);

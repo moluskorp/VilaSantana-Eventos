@@ -1,5 +1,8 @@
 import styled from 'styled-components';
 
+import rightArrow from '../../assets/arrow-right.svg';
+import leftArrow from '../../assets/arrow-left.svg';
+
 export const Container = styled.div`
     width: 100%;
     display: flex;
@@ -72,4 +75,24 @@ export const Divider = styled.div`
     content: '';
     width: 100%;
     border-top: 1px solid rgba(0, 0, 0, 0.3);
+`;
+
+export const Previous = styled.button`
+    background: url(${leftArrow}) no-repeat;
+    background-size: cover;
+    width: 50px;
+    height: 50px;
+    border-radius: 9999px;
+    margin-right: 1rem;
+    cursor: pointer;
+`;
+
+export const Next = styled.button`
+    background: url(${rightArrow}) no-repeat;
+    background-size: cover;
+    width: 50px;
+    height: 50px;
+    border-radius: 9999px;
+    margin-left: 1rem;
+    cursor: pointer;
 `;

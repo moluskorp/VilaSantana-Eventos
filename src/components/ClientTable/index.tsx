@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useClient } from '../../hooks/useClient';
 import Divider from '../Divider';
 import {
@@ -11,46 +12,19 @@ import {
     Label,
     LabelHeader,
     Name,
+    Next,
+    Previous,
     Row,
 } from './style';
 
-const listClient = [
-    {
-        name: 'Carlos Cesar Baratella Junior',
-        address: 'Trav. Schibuola',
-        number: '171',
-        district: 'Campos Eliseos',
-        whatsapp: '(16) 99604 - 0016',
-        cpf: '399.075.378-96',
-        complement: '',
-        city: 'Ribeirão Preto',
-        cep: '14080-720',
-    },
-    {
-        name: 'Neusa Ribeiro Baratella',
-        address: 'Trav. Schibuola',
-        number: '188',
-        district: 'Campos Eliseos',
-        whatsapp: '(16) 99604 - 1234',
-        cpf: '040.761.838-43',
-        complement: '',
-        city: 'Ribeirão Preto',
-        cep: '14080-720',
-    },
-    {
-        name: 'Carlos Cesar Baratella',
-        address: 'Trav. Schibuola',
-        number: '239',
-        district: 'Campos Eliseos',
-        whatsapp: '(16) 99604 - 1478',
-        cpf: '039.574.157-78',
-        complement: '',
-        city: 'Ribeirão Preto',
-        cep: '14080-720',
-    },
-];
+type Pagination = {
+    firstClient: string;
+    lastClient: string;
+    action: 'next' | 'previous' | '';
+};
 
 type Client = {
+    id: string;
     name: string;
     address: string;
     number: string;
@@ -59,15 +33,64 @@ type Client = {
     cpf: string;
     complement: string;
     city: string;
-    cep: string;
+    postalcode: string;
 };
 
-export default function ClientTable() {
-    const { changeClient } = useClient();
+type ClientTableProps = {
+    clients: Client[];
+};
 
-    function handleSelectClient(client: Client) {
-        changeClient(client);
-    }
+export default function ClientTable({ clients }: ClientTableProps) {
+    const { changeClient, selectClientListOnDb, selectClientListByNameOnDb } =
+        useClient();
+    // const [clients, setClients] = useState<Client[]>();
+    const [pagination, setPagination] = useState<Pagination>({} as Pagination);
+    const [page, setPage] = useState(1);
+
+    useEffect(() => {
+        console.log('Clients: ');
+        console.log(clients);
+    }, [clients]);
+
+    const nextButtonDisabled = useMemo(() => {
+        if (clients) {
+            return clients?.length <= 9;
+        }
+        return false;
+    }, [clients]);
+
+    const previousButtonDisabled = useMemo(() => {
+        return page === 1;
+    }, [page]);
+
+    const handleSelectClient = useCallback(
+        (client: Client) => {
+            changeClient(client);
+        },
+        [changeClient],
+    );
+
+    const handleNextPage = useCallback(() => {
+        if (clients) {
+            setPagination({
+                firstClient: clients[0].id,
+                lastClient: clients[clients.length - 1].id,
+                action: 'next',
+            });
+            setPage(page + 1);
+        }
+    }, [clients, page]);
+
+    const handlePreviousPage = useCallback(() => {
+        if (clients) {
+            setPagination({
+                firstClient: clients[0].id,
+                lastClient: clients[clients.length - 1].id,
+                action: 'previous',
+            });
+            setPage(page - 1);
+        }
+    }, [clients, page]);
 
     return (
         <Container>
@@ -93,7 +116,7 @@ export default function ClientTable() {
                 </DivWhats>
             </Flex>
             <Divider style={{ marginTop: '0.5rem' }} />
-            {listClient.map(client => (
+            {clients?.map(client => (
                 <Row
                     key={client.name}
                     style={{
@@ -122,6 +145,20 @@ export default function ClientTable() {
                 </Row>
             ))}
             <Divider style={{ marginTop: '0.5rem' }} />
+            <Flex
+                style={{
+                    flexDirection: 'row',
+                    width: '100%',
+                    justifyContent: 'center',
+                    marginTop: '1rem',
+                }}
+            >
+                <Previous
+                    disabled={previousButtonDisabled}
+                    onClick={handlePreviousPage}
+                />
+                <Next disabled={nextButtonDisabled} onClick={handleNextPage} />
+            </Flex>
         </Container>
     );
 }
