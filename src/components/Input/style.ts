@@ -53,6 +53,7 @@ export const ErrorMessage = styled.text`
 export const ContainerInput = styled.div<ContainerProps>`
     width: 100%;
     margin-left: 0.25rem;
+
     input {
         background-color: transparent;
         height: 30px;

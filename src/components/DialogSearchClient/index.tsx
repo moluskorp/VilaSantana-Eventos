@@ -3,8 +3,9 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useClient } from '../../hooks/useClient';
 import { useModal } from '../../hooks/useModal';
 import Button from '../Button';
-import ClientTable from '../ClientTable';
+import ClientSearchDiv from '../ClientSearchDiv';
 import DialogAddClient from '../DialogAddClient';
+import Input from '../Input';
 import {
     CloseIcon,
     Flex,
@@ -116,12 +117,16 @@ export default function DialogSearchClient() {
                     Selecione um cliente na lista ou clique no botão para
                     adicionar um novo
                 </DialogDescription>
-                <input
-                    type="text"
+                <Input
+                    name="clientSearch"
+                    type="normal"
+                    placeholder="Nome do cliente"
                     onChange={event => setValue(event.target.value)}
                     value={value}
                 />
-                <ClientTable clients={result} />
+                {result.map(resulta => (
+                    <ClientSearchDiv key={resulta.id} client={resulta} />
+                ))}
                 <Flex
                     style={{
                         marginLeft: 'auto',

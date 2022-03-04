@@ -24,7 +24,8 @@ export const StyledContent = styled(DialogPrimitive.Content)`
     transform: translate(-50%, -50%);
     width: 90vw;
     max-width: 62.5rem;
-    max-height: 85vh;
+    max-height: 90vh;
+    height: 90vh;
     padding: 25px;
 
     @media (prefers-reduced-motion: no preference) {
