@@ -25,6 +25,7 @@ interface OrderContextData {
     setDelivery: (discount: number) => void;
     delivery: number;
     discount: number;
+    subTotal: number;
 }
 
 const OrderContext = createContext<OrderContextData>({} as OrderContextData);
@@ -45,13 +46,16 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         },
     ]);
 
-    const total = useMemo(() => {
-        const subTotal = order.reduce((sumTotal, item) => {
+    const subTotal = useMemo(() => {
+        return order.reduce((sumTotal, item) => {
             const subTotalReduce = item.quantity * item.price;
             return sumTotal + subTotalReduce;
         }, 0);
+    }, [order]);
+
+    const total = useMemo(() => {
         return subTotal - discount + delivery;
-    }, [order, discount, delivery]);
+    }, [discount, delivery, subTotal]);
 
     const addItem = useMemo(
         () =>
@@ -125,6 +129,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             setDelivery,
             delivery,
             discount,
+            subTotal,
         }),
         [
             removeItem,
@@ -134,6 +139,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             total,
             delivery,
             discount,
+            subTotal,
         ],
     );
 

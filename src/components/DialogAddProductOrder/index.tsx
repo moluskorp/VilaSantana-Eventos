@@ -1,6 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
+import { useForm } from 'react-hook-form';
 import { Form } from '@unform/web';
 import { FormHandles } from '@unform/core';
 import * as yup from 'yup';
@@ -16,7 +15,6 @@ import {
     StyledTitle,
 } from './style';
 import { useOrder } from '../../hooks/useOrder';
-import getValidationErrors from '../../util/getValidationErrors';
 
 type AddProductFormData = {
     name: string;

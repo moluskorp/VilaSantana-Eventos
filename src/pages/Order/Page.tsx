@@ -1,6 +1,5 @@
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { CheckIcon } from '@radix-ui/react-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -40,30 +39,35 @@ import DialogAddProductOrder from '../../components/DialogAddProductOrder';
 import stringToNumber from '../../util/stringToNumber';
 import DialogSearchClient from '../../components/DialogSearchClient';
 import useAuth from '../../hooks/useAuth';
-import { ClientProvider, useClient } from '../../hooks/useClient';
-import { ModalProvider, useModal } from '../../hooks/useModal';
-
-const addOrderFormSchema = yup.object().shape({});
+import { useClient } from '../../hooks/useClient';
+import { useModal } from '../../hooks/useModal';
+import OrderReport from '../../reports/OrderReport';
+import { useYupValidationResolver } from '../../util/useYupValidationResolver';
+import ScrollArea from '../../components/ScrollArea';
+import DialogSearchSeller from '../../components/DialogSearchSeller';
+import { useSeller } from '../../hooks/useSeller';
 
 export default function Page() {
     const { user } = useAuth();
     const { client } = useClient();
     const navigate = useNavigate();
     const { open, setOpen } = useModal();
+    const [modalSellerOpen, setModalSellerOpen] = useState(false);
+
+    const schema = yup.object().shape({
+        name: yup.string().required('Nome obrigatório'),
+        deliverydate: yup
+            .date()
+            .min(new Date(), 'Selecionar uma data posterior a hoje')
+            .required('Campo obrigatório'),
+        deliveryhour: yup.string().required('Hora obrigatória'),
+    });
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
         useForm({
-            resolver: yupResolver(addOrderFormSchema),
+            resolver: useYupValidationResolver(schema),
         });
     const { errors } = formState;
-
-    useEffect(() => {
-        if (!client || client === undefined) {
-            setOpen(true);
-        } else {
-            setOpen(!open);
-        }
-    }, [client]);
 
     const {
         order: itens,
@@ -72,12 +76,16 @@ export default function Page() {
         setDelivery,
         delivery: deliveryTotal,
         discount: discountTotal,
+        subTotal,
     } = useOrder();
+
+    const { seller } = useSeller();
 
     const deliveryFormatted = useMemo(
         () => formatPrice(deliveryTotal),
         [deliveryTotal],
     );
+    const subTotalFormatted = useMemo(() => formatPrice(subTotal), [subTotal]);
 
     const discountFormatted = useMemo(
         () => formatPrice(discountTotal),
@@ -113,6 +121,48 @@ export default function Page() {
     );
 
     const total = useMemo(() => formatPrice(totalNumber), [totalNumber]);
+
+    const handleFinish = useCallback(
+        event => {
+            const celular = `55${client?.whatsapp}`;
+            const headerMessage = `Olá *${client?.name}* agradececemos o seu *pedido* segue a lista de produtos e o total\n\n`;
+            let testProduct = '';
+            itensFormatted.forEach(item => {
+                testProduct += `Descrição: *${item.name}*\nPreço Unitário: ${item.priceFormatted} Quantidade: ${item.quantity}\nValor Total: *${item.subTotal}*\n\n`;
+            });
+            const totalMessage = `Sub-Total: ${subTotalFormatted} \nValor da entrega: ${deliveryFormatted}\nValor do desconto: ${discountFormatted}\nValor Total: *${total}*\n\n`;
+            const finalMessage = `O vila santana agradece a sua preferência
+        `;
+            const textoEncode = window.encodeURIComponent(
+                `${headerMessage}${testProduct}${totalMessage}${finalMessage}`,
+            );
+            window.open(
+                `https://api.whatsapp.com/send?phone=${celular}&text=${textoEncode}`,
+                '_blank',
+            );
+        },
+        [
+            client?.name,
+            deliveryFormatted,
+            discountFormatted,
+            itensFormatted,
+            total,
+            client?.whatsapp,
+            subTotalFormatted,
+        ],
+    );
+
+    const handleBudget = useCallback(() => {
+        const order = {
+            client,
+            products: itensFormatted,
+            total,
+            subTotal: 100,
+            delivery: deliveryTotal,
+            discount: discountTotal,
+        };
+        OrderReport(order);
+    }, [client, deliveryTotal, itensFormatted, total, discountTotal]);
 
     return (
         <>
@@ -393,7 +443,10 @@ export default function Page() {
                             style={{ width: '14.5rem' }}
                         />
                     </Flex>
-                    <Button containerStyle={{ marginTop: '1rem' }}>
+                    <Button
+                        containerStyle={{ marginTop: '1rem' }}
+                        onClick={handleFinish}
+                    >
                         Finalizar Faturamento
                     </Button>
                     <Button
@@ -402,6 +455,7 @@ export default function Page() {
                             marginTop: '1rem',
                             marginLeft: '1rem',
                         }}
+                        onClick={handleBudget}
                     >
                         Enviar Orçamento
                     </Button>
@@ -420,9 +474,20 @@ export default function Page() {
                         <Avatar />
                         <ContainerVendedor>
                             <p>Vendedor</p>
-                            <strong>Marcia Donato</strong>
+                            <strong>{seller?.name}</strong>
                         </ContainerVendedor>
-                        <ChangeSeller>ALTERAR</ChangeSeller>
+                        <DialogSearchSeller
+                            modalOpen={modalSellerOpen}
+                            setModalOpen={setModalSellerOpen}
+                        >
+                            <ChangeSeller
+                                onClick={() => {
+                                    setModalSellerOpen(true);
+                                }}
+                            >
+                                ALTERAR
+                            </ChangeSeller>
+                        </DialogSearchSeller>
                     </Container>
                     <Container
                         style={{
@@ -457,30 +522,27 @@ export default function Page() {
                                 width: '90%',
                             }}
                         />
-                        {itensFormatted.map(item => (
-                            <React.Fragment key={item.name}>
-                                <ProductOrder
-                                    key={item.name}
-                                    name={item.name}
-                                    price={item.price}
-                                    priceFormatted={item.priceFormatted}
-                                    quantity={item.quantity}
-                                />
-                                <Divider
-                                    style={{
-                                        marginLeft: '1rem',
-                                        marginRight: '1rem',
-                                        width: '90%',
-                                    }}
-                                />
-                            </React.Fragment>
-                        ))}
+                        <ScrollArea>
+                            {itensFormatted.map(item => (
+                                <React.Fragment key={item.name}>
+                                    <ProductOrder
+                                        key={item.name}
+                                        name={item.name}
+                                        price={item.price}
+                                        priceFormatted={item.priceFormatted}
+                                        quantity={item.quantity}
+                                    />
+                                    <Divider />
+                                </React.Fragment>
+                            ))}
+                        </ScrollArea>
+
                         <Divider
                             style={{
                                 marginLeft: '1rem',
                                 marginRight: '1rem',
                                 width: '90%',
-                                marginTop: 'auto',
+                                marginTop: '0.5rem',
                             }}
                         />
                         <Flex

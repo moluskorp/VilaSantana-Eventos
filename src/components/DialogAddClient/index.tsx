@@ -17,6 +17,7 @@ import Button from '../Button';
 import InputOrder from '../InputOrder';
 import errorResolverFirebase from '../../util/errorResolverFirebase';
 import { useClient } from '../../hooks/useClient';
+import { useYupValidationResolver } from '../../util/useYupValidationResolver';
 
 type FormValues = {
     id: string;
@@ -73,36 +74,6 @@ export default function DialogAddClient({
         address: yup.string().required('Favor preencher o endereço'),
         cpf: yup.string().required('Favor preencher o cpf'),
     });
-
-    const useYupValidationResolver = schemaOn =>
-        useCallback(
-            async data => {
-                try {
-                    const values = await schemaOn.validate(data, {
-                        abortEarly: false,
-                    });
-                    return {
-                        values,
-                        errors: {},
-                    };
-                } catch (err) {
-                    return {
-                        values: {},
-                        errors: err.inner.reduce(
-                            (allErrors, currentError) => ({
-                                ...allErrors,
-                                [currentError.path]: {
-                                    type: currentError.type ?? 'validation',
-                                    message: currentError.message,
-                                },
-                            }),
-                            {},
-                        ),
-                    };
-                }
-            },
-            [schemaOn],
-        );
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
         useForm<FormValues>({

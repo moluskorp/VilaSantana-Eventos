@@ -1,7 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ReactNode, useEffect, useState } from 'react';
 import { useClient } from '../../hooks/useClient';
-import { useModal } from '../../hooks/useModal';
+import { ModalProvider, useModal } from '../../hooks/useModal';
 import Button from '../Button';
 import ClientSearchDiv from '../ClientSearchDiv';
 import DialogAddClient from '../DialogAddClient';
@@ -67,6 +67,9 @@ export default function DialogSearchClient() {
     const [names, setNames] = useState<JsonProps[]>([]);
 
     useEffect(() => {
+        if (client) {
+            setOpen(false);
+        }
         fetch(
             'https://vilsantana-eventos-default-rtdb.firebaseio.com/clients.json',
         )
@@ -110,45 +113,47 @@ export default function DialogSearchClient() {
     }
 
     return (
-        <Dialog open={open}>
-            <DialogContent>
-                <DialogTitle>Buscar um Cliente</DialogTitle>
-                <DialogDescription>
-                    Selecione um cliente na lista ou clique no botão para
-                    adicionar um novo
-                </DialogDescription>
-                <Input
-                    name="clientSearch"
-                    type="normal"
-                    placeholder="Nome do cliente"
-                    onChange={event => setValue(event.target.value)}
-                    value={value}
-                />
-                {result.map(resulta => (
-                    <ClientSearchDiv key={resulta.id} client={resulta} />
-                ))}
-                <Flex
-                    style={{
-                        marginLeft: 'auto',
-                        justifyContent: 'end',
-                        marginTop: '1rem',
-                    }}
-                >
-                    <DialogAddClient>
-                        <Button buttonType="secundary">
-                            Cadastrar novo cliente
-                        </Button>
-                    </DialogAddClient>
-                    <Button
-                        buttonType="outline"
-                        containerStyle={{ marginLeft: '1rem' }}
-                        onClick={handleCloseModal}
+        <ModalProvider>
+            <Dialog open={open}>
+                <DialogContent>
+                    <DialogTitle>Buscar um Cliente</DialogTitle>
+                    <DialogDescription>
+                        Selecione um cliente na lista ou clique no botão para
+                        adicionar um novo
+                    </DialogDescription>
+                    <Input
+                        name="clientSearch"
+                        type="normal"
+                        placeholder="Nome do cliente"
+                        onChange={event => setValue(event.target.value)}
+                        value={value}
+                    />
+                    {result.map(resulta => (
+                        <ClientSearchDiv key={resulta.id} client={resulta} />
+                    ))}
+                    <Flex
+                        style={{
+                            marginLeft: 'auto',
+                            justifyContent: 'end',
+                            marginTop: '1rem',
+                        }}
                     >
-                        Cancelar
-                    </Button>
-                </Flex>
-                <CloseIcon onClick={handleCloseModal} />
-            </DialogContent>
-        </Dialog>
+                        <DialogAddClient>
+                            <Button buttonType="secundary">
+                                Cadastrar novo cliente
+                            </Button>
+                        </DialogAddClient>
+                        <Button
+                            buttonType="outline"
+                            containerStyle={{ marginLeft: '1rem' }}
+                            onClick={handleCloseModal}
+                        >
+                            Cancelar
+                        </Button>
+                    </Flex>
+                    <CloseIcon onClick={handleCloseModal} />
+                </DialogContent>
+            </Dialog>
+        </ModalProvider>
     );
 }
