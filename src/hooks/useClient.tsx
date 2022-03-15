@@ -15,15 +15,10 @@ import {
     child,
     query,
     limitToFirst,
-    Query,
     startAt,
     endAt,
     orderByKey,
     orderByChild,
-    startAfter,
-    endBefore,
-    equalTo,
-    orderByValue,
 } from 'firebase/database';
 
 import { v4 as uuidV4 } from 'uuid';
@@ -83,8 +78,6 @@ const ClientContext = createContext<ClientContextData>({} as ClientContextData);
 
 export function ClientProvider({ children }: ClientProviderProps) {
     const [client, setClient] = useState<Client | null>();
-    const lastId = '';
-    const firstId = '';
 
     useEffect(() => {
         console.log(client);

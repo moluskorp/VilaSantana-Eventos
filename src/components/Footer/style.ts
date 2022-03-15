@@ -6,7 +6,8 @@ export const Nav = styled.div`
     height: 40px;
     width: 100%;
     border-top: 1px solid rgba(0, 0, 0, 0.3);
-    margin-top: 0.5rem;
+    display: flex;
+    margin-top: auto;
 `;
 
 export const Container = styled.div`

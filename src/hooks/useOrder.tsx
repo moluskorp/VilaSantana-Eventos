@@ -1,10 +1,32 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { ref, set } from 'firebase/database';
+import {
+    createContext,
+    ReactNode,
+    useCallback,
+    useContext,
+    useMemo,
+    useState,
+} from 'react';
+import { database } from '../services/firebase';
 
 interface Item {
     name: string;
     price: number;
     quantity: number;
 }
+
+type Client = {
+    id: string;
+    cpf: string;
+    name: string;
+    whatsapp: string;
+    address: string;
+    number: string;
+    district: string;
+    complement: string;
+    city: string;
+    postalcode: string;
+};
 
 interface OrderProviderProps {
     children: ReactNode;
@@ -116,6 +138,21 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
                 }
             },
         [order],
+    );
+
+    const saveOrderOnDb = useCallback(
+        async (client: Client) => {
+            await set(ref(database, `orders/`), {
+                createdAt: new Date(),
+                client,
+                items: order,
+                delivery,
+                discount,
+                total,
+                subTotal,
+            });
+        },
+        [delivery, discount, total, subTotal, order],
     );
 
     const value = useMemo(

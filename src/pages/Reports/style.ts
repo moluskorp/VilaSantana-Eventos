@@ -1,6 +1,14 @@
 import styled from 'styled-components';
 
 export const Nav = styled.div`
+    width: 100vw;
+    height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+`;
+
+export const Container = styled.div`
     flex: 1;
     width: 73rem;
     height: 830px;
@@ -9,14 +17,10 @@ export const Nav = styled.div`
     background-color: rgba(255, 255, 255, 0.5);
     border-radius: 1.25rem;
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: center;
 `;
 
-export const Container = styled.div`
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
+export const Title = styled.h1`
+    margin-top: 1rem;
 `;

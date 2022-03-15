@@ -73,7 +73,7 @@ export default function DialogAddClient({
         name: yup.string().required('Nome Obrigatório'),
         address: yup.string().required('Favor preencher o endereço'),
         cpf: yup.string().required('Favor preencher o cpf'),
-    });
+    }); 
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
         useForm<FormValues>({

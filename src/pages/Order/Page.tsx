@@ -1,8 +1,16 @@
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { CheckIcon } from '@radix-ui/react-icons';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Form } from '@unform/web';
+import { FormHandles } from '@unform/core';
 import Header from '../../components/Header';
 import InputOrder from '../../components/InputOrder';
 import {
@@ -47,7 +55,12 @@ import ScrollArea from '../../components/ScrollArea';
 import DialogSearchSeller from '../../components/DialogSearchSeller';
 import { useSeller } from '../../hooks/useSeller';
 
+type FormValues = {
+    name: string;
+};
+
 export default function Page() {
+    const formRef = useRef<FormHandles>(null);
     const { user } = useAuth();
     const { client } = useClient();
     const navigate = useNavigate();
@@ -56,15 +69,18 @@ export default function Page() {
 
     const schema = yup.object().shape({
         name: yup.string().required('Nome obrigatório'),
-        deliverydate: yup
+        /* deliverydate: yup
             .date()
             .min(new Date(), 'Selecionar uma data posterior a hoje')
             .required('Campo obrigatório'),
         deliveryhour: yup.string().required('Hora obrigatória'),
+        address: yup.string().required('Endereço obrigatório'),
+        number: yup.string().required('Número obrigatório'),
+        district: yup.string().required('Bairro obrigatório'), */
     });
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
-        useForm({
+        useForm<FormValues>({
             resolver: useYupValidationResolver(schema),
         });
     const { errors } = formState;
@@ -122,47 +138,74 @@ export default function Page() {
 
     const total = useMemo(() => formatPrice(totalNumber), [totalNumber]);
 
+    async function handleBudget() {
+        await handleSubmit(async data => {
+            console.log('oie');
+            console.log(data.name);
+        });
+    }
+
+    // const handleBudget = useCallback(async () => {
+    //     await handleSubmit(async data => {
+    //         console.log(data);
+    //     });
+    //     const order = {
+    //         client,
+    //         products: itensFormatted,
+    //         total,
+    //         subTotal: 100,
+    //         delivery: deliveryTotal,
+    //         discount: discountTotal,
+    //     };
+    //     console.log(order);
+    //     // OrderReport(order);
+    // }, [
+    //     client,
+    //     deliveryTotal,
+    //     itensFormatted,
+    //     total,
+    //     discountTotal,
+    //     handleSubmit,
+    // ]);
+
+    const handleWhatsapp = useCallback(() => {
+        const celular = `55${client?.whatsapp}`;
+        const headerMessage = `Olá *${client?.name}* agradececemos o seu *pedido* segue a lista de produtos e o total\n\n`;
+        let testProduct = '';
+        itensFormatted.forEach(item => {
+            testProduct += `Descrição: *${item.name}*\nPreço Unitário: ${item.priceFormatted} Quantidade: ${item.quantity}\nValor Total: *${item.subTotal}*\n\n`;
+        });
+        const totalMessage = `Sub-Total: ${subTotalFormatted} \nValor da entrega: ${deliveryFormatted}\nValor do desconto: ${discountFormatted}\nValor Total: *${total}*\n\n`;
+        const finalMessage = `O vila santana agradece a sua preferência
+        `;
+        const textoEncode = window.encodeURIComponent(
+            `${headerMessage}${testProduct}${totalMessage}${finalMessage}`,
+        );
+        window.open(
+            `https://api.whatsapp.com/send?phone=${celular}&text=${textoEncode}`,
+            '_blank',
+        );
+    }, [
+        client?.name,
+        deliveryFormatted,
+        discountFormatted,
+        itensFormatted,
+        total,
+        client?.whatsapp,
+        subTotalFormatted,
+    ]);
+
     const handleFinish = useCallback(
         event => {
-            const celular = `55${client?.whatsapp}`;
-            const headerMessage = `Olá *${client?.name}* agradececemos o seu *pedido* segue a lista de produtos e o total\n\n`;
-            let testProduct = '';
-            itensFormatted.forEach(item => {
-                testProduct += `Descrição: *${item.name}*\nPreço Unitário: ${item.priceFormatted} Quantidade: ${item.quantity}\nValor Total: *${item.subTotal}*\n\n`;
-            });
-            const totalMessage = `Sub-Total: ${subTotalFormatted} \nValor da entrega: ${deliveryFormatted}\nValor do desconto: ${discountFormatted}\nValor Total: *${total}*\n\n`;
-            const finalMessage = `O vila santana agradece a sua preferência
-        `;
-            const textoEncode = window.encodeURIComponent(
-                `${headerMessage}${testProduct}${totalMessage}${finalMessage}`,
+            const sendWhatsapp = confirm(
+                'Deseja enviar o faturamento para o whatsapp do cliente?',
             );
-            window.open(
-                `https://api.whatsapp.com/send?phone=${celular}&text=${textoEncode}`,
-                '_blank',
-            );
+            if (sendWhatsapp) {
+                handleWhatsapp();
+            }
         },
-        [
-            client?.name,
-            deliveryFormatted,
-            discountFormatted,
-            itensFormatted,
-            total,
-            client?.whatsapp,
-            subTotalFormatted,
-        ],
+        [handleWhatsapp],
     );
-
-    const handleBudget = useCallback(() => {
-        const order = {
-            client,
-            products: itensFormatted,
-            total,
-            subTotal: 100,
-            delivery: deliveryTotal,
-            discount: discountTotal,
-        };
-        OrderReport(order);
-    }, [client, deliveryTotal, itensFormatted, total, discountTotal]);
 
     return (
         <>
@@ -193,281 +236,283 @@ export default function Page() {
                         <HomeIcon />
                         <strong>ENDEREÇO DE ENTREGA</strong>
                     </ContainerMaior>
-                    <ContainerLineInput>
-                        <InputOrder
-                            name="name"
-                            label="Nome"
-                            error={errors.name}
-                            value={client?.name}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '21.25rem' }}
-                        />
-                        <InputOrder
-                            name="whats"
-                            label="Celular/WhatsApp"
-                            type="telephone"
-                            error={errors.whats}
-                            value={client?.whatsapp}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '15.625rem' }}
-                        />
-                    </ContainerLineInput>
-                    <ContainerLineInput>
-                        <InputOrder
-                            name="address"
-                            label="Endereço"
-                            error={errors.address}
-                            value={client?.address}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '21.25rem' }}
-                        />
-                        <InputOrder
-                            name="number"
-                            label="Número"
-                            error={errors.number}
-                            value={client?.number}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '15.625rem' }}
-                        />
-                    </ContainerLineInput>
-                    <ContainerLineInput>
-                        <InputOrder
-                            name="district"
-                            label="Bairro"
-                            error={errors.district}
-                            value={client?.district}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '21.25rem' }}
-                        />
-                        <InputOrder
-                            name="complement"
-                            label="Complemento"
-                            error={errors.complement}
-                            value={client?.complement}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '15.625rem' }}
-                        />
-                    </ContainerLineInput>
-                    <ContainerLineInput>
-                        <InputOrder
-                            name="city"
-                            label="Cidade"
-                            error={errors.city}
-                            value={client?.city}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '21.25rem' }}
-                        />
-                        <InputOrder
-                            name="postalcode"
-                            label="CEP"
-                            error={errors.postalcode}
-                            value={client?.cep}
-                            type="postalcode"
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '15.625rem' }}
-                        />
-                    </ContainerLineInput>
-                    <TipoEntrega>Tipo de Entrega</TipoEntrega>
-                    <RadioGroup defaultValue="entrega">
-                        <Flex
-                            style={{
-                                marginTop: '0.5rem',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <RadioGroupRadio value="entrega" id="r1">
-                                <RadioGroupIndicator />
-                            </RadioGroupRadio>
-                            <Label
-                                style={{
-                                    marginLeft: '1rem',
-                                }}
-                                htmlFor="r1"
-                            >
-                                Entrega
-                            </Label>
-                        </Flex>
-                        <Flex
-                            style={{
-                                margin: '0.5rem 0 0 4rem',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <RadioGroupRadio value="retirada" id="r2">
-                                <RadioGroupIndicator />
-                            </RadioGroupRadio>
-                            <Label
-                                style={{
-                                    marginLeft: '1rem',
-                                }}
-                                htmlFor="r2"
-                            >
-                                Retirada
-                            </Label>
-                        </Flex>
-                    </RadioGroup>
-                    <ContainerLineInput>
-                        <Flex>
+                    <Form ref={formRef} onSubmit={handleBudget}>
+                        <ContainerLineInput>
                             <InputOrder
-                                name="deliverydate"
-                                label="Data de Entrega"
-                                type="date"
-                                error={errors.deliverydate}
+                                name="name"
+                                label="Nome"
+                                error={errors.name}
+                                value={client?.name}
                                 setFocus={setFocus}
                                 register={register}
-                                style={{ width: '12.5rem' }}
+                                style={{ width: '21.25rem' }}
                             />
-                            <Flex style={{ marginLeft: '0.5rem' }} />
                             <InputOrder
-                                name="deliveryhour"
-                                label="Horário"
-                                type="time"
-                                error={errors.deliveryhour}
+                                name="whats"
+                                label="Celular/WhatsApp"
+                                type="telephone"
+                                error={errors.whats}
+                                value={client?.whatsapp}
                                 setFocus={setFocus}
                                 register={register}
-                                style={{ width: '3.25rem' }}
+                                style={{ width: '15.625rem' }}
                             />
-                        </Flex>
-                        <InputOrder
-                            name="deliveryprice"
-                            label="Valor da Entrega"
-                            type="currency"
-                            error={errors.deliveryhour}
-                            onChange={handleDeliveryChange}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '14.5rem' }}
-                        />
-                    </ContainerLineInput>
-                    <Flex style={{ justifyContent: 'space-between' }}>
-                        <div>
-                            <TipoEntrega>Pagamento</TipoEntrega>
-                            <Flex>
-                                <Flex style={{ alignItems: 'center' }}>
-                                    <Checkbox defaultChecked id="money">
-                                        <CheckboxIndicator>
-                                            <CheckIcon />
-                                        </CheckboxIndicator>
-                                    </Checkbox>
-                                    <Label
-                                        style={{
-                                            paddingLeft: '0.725rem',
-                                            marginTop: '0.5rem',
-                                        }}
-                                        htmlFor="money"
-                                    >
-                                        Dinheiro
-                                    </Label>
-                                </Flex>
-                                <Flex
+                        </ContainerLineInput>
+                        <ContainerLineInput>
+                            <InputOrder
+                                name="address"
+                                label="Endereço"
+                                error={errors.address}
+                                value={client?.address}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '21.25rem' }}
+                            />
+                            <InputOrder
+                                name="number"
+                                label="Número"
+                                error={errors.number}
+                                value={client?.number}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '15.625rem' }}
+                            />
+                        </ContainerLineInput>
+                        <ContainerLineInput>
+                            <InputOrder
+                                name="district"
+                                label="Bairro"
+                                error={errors.district}
+                                value={client?.district}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '21.25rem' }}
+                            />
+                            <InputOrder
+                                name="complement"
+                                label="Complemento"
+                                error={errors.complement}
+                                value={client?.complement}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '15.625rem' }}
+                            />
+                        </ContainerLineInput>
+                        <ContainerLineInput>
+                            <InputOrder
+                                name="city"
+                                label="Cidade"
+                                error={errors.city}
+                                value={client?.city}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '21.25rem' }}
+                            />
+                            <InputOrder
+                                name="postalcode"
+                                label="CEP"
+                                error={errors.postalcode}
+                                value={client?.cep}
+                                type="postalcode"
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '15.625rem' }}
+                            />
+                        </ContainerLineInput>
+                        <TipoEntrega>Tipo de Entrega</TipoEntrega>
+                        <RadioGroup defaultValue="entrega">
+                            <Flex
+                                style={{
+                                    marginTop: '0.5rem',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <RadioGroupRadio value="entrega" id="r1">
+                                    <RadioGroupIndicator />
+                                </RadioGroupRadio>
+                                <Label
                                     style={{
-                                        alignItems: 'center',
-                                        marginLeft: '0.5rem',
+                                        marginLeft: '1rem',
                                     }}
+                                    htmlFor="r1"
                                 >
-                                    <Checkbox id="card">
-                                        <CheckboxIndicator>
-                                            <CheckIcon />
-                                        </CheckboxIndicator>
-                                    </Checkbox>
-                                    <Label
-                                        style={{
-                                            paddingLeft: '0.725rem',
-                                            marginTop: '0.5rem',
-                                        }}
-                                        htmlFor="card"
-                                    >
-                                        Cartão
-                                    </Label>
-                                </Flex>
-                                <Flex
-                                    style={{
-                                        alignItems: 'center',
-                                        marginLeft: '0.5rem',
-                                    }}
-                                >
-                                    <Checkbox id="pix">
-                                        <CheckboxIndicator>
-                                            <CheckIcon />
-                                        </CheckboxIndicator>
-                                    </Checkbox>
-                                    <Label
-                                        style={{
-                                            paddingLeft: '0.725rem',
-                                            marginTop: '0.5rem',
-                                        }}
-                                        htmlFor="pix"
-                                    >
-                                        PIX
-                                    </Label>
-                                </Flex>
-                                <Flex
-                                    style={{
-                                        alignItems: 'center',
-                                        marginLeft: '0.5rem',
-                                    }}
-                                >
-                                    <Checkbox id="cheque">
-                                        <CheckboxIndicator>
-                                            <CheckIcon />
-                                        </CheckboxIndicator>
-                                    </Checkbox>
-                                    <Label
-                                        style={{
-                                            paddingLeft: '0.725rem',
-                                            marginTop: '0.5rem',
-                                        }}
-                                        htmlFor="cheque"
-                                    >
-                                        Cheque
-                                    </Label>
-                                </Flex>
+                                    Entrega
+                                </Label>
                             </Flex>
-                        </div>
-                        <InputOrder
-                            name="discount"
-                            label="Valor do Desconto"
-                            type="currency"
-                            error={errors.discount}
-                            onChange={handleDiscountChange}
-                            setFocus={setFocus}
-                            register={register}
-                            style={{ width: '14.5rem' }}
-                        />
-                    </Flex>
-                    <Button
-                        containerStyle={{ marginTop: '1rem' }}
-                        onClick={handleFinish}
-                    >
-                        Finalizar Faturamento
-                    </Button>
-                    <Button
-                        buttonType="secundary"
-                        containerStyle={{
-                            marginTop: '1rem',
-                            marginLeft: '1rem',
-                        }}
-                        onClick={handleBudget}
-                    >
-                        Enviar Orçamento
-                    </Button>
-                    <Button
-                        buttonType="outline"
-                        containerStyle={{
-                            marginTop: '1rem',
-                            marginLeft: '4rem',
-                        }}
-                    >
-                        Cancelar
-                    </Button>
+                            <Flex
+                                style={{
+                                    margin: '0.5rem 0 0 4rem',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <RadioGroupRadio value="retirada" id="r2">
+                                    <RadioGroupIndicator />
+                                </RadioGroupRadio>
+                                <Label
+                                    style={{
+                                        marginLeft: '1rem',
+                                    }}
+                                    htmlFor="r2"
+                                >
+                                    Retirada
+                                </Label>
+                            </Flex>
+                        </RadioGroup>
+                        <ContainerLineInput>
+                            <Flex>
+                                <InputOrder
+                                    name="deliverydate"
+                                    label="Data de Entrega"
+                                    type="date"
+                                    error={errors.deliverydate}
+                                    setFocus={setFocus}
+                                    register={register}
+                                    style={{ width: '12.5rem' }}
+                                />
+                                <Flex style={{ marginLeft: '0.5rem' }} />
+                                <InputOrder
+                                    name="deliveryhour"
+                                    label="Horário"
+                                    type="time"
+                                    error={errors.deliveryhour}
+                                    setFocus={setFocus}
+                                    register={register}
+                                    style={{ width: '3.25rem' }}
+                                />
+                            </Flex>
+                            <InputOrder
+                                name="deliveryprice"
+                                label="Valor da Entrega"
+                                type="currency"
+                                error={errors.deliveryhour}
+                                onChange={handleDeliveryChange}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '14.5rem' }}
+                            />
+                        </ContainerLineInput>
+                        <Flex style={{ justifyContent: 'space-between' }}>
+                            <div>
+                                <TipoEntrega>Pagamento</TipoEntrega>
+                                <Flex>
+                                    <Flex style={{ alignItems: 'center' }}>
+                                        <Checkbox defaultChecked id="money">
+                                            <CheckboxIndicator>
+                                                <CheckIcon />
+                                            </CheckboxIndicator>
+                                        </Checkbox>
+                                        <Label
+                                            style={{
+                                                paddingLeft: '0.725rem',
+                                                marginTop: '0.5rem',
+                                            }}
+                                            htmlFor="money"
+                                        >
+                                            Dinheiro
+                                        </Label>
+                                    </Flex>
+                                    <Flex
+                                        style={{
+                                            alignItems: 'center',
+                                            marginLeft: '0.5rem',
+                                        }}
+                                    >
+                                        <Checkbox id="card">
+                                            <CheckboxIndicator>
+                                                <CheckIcon />
+                                            </CheckboxIndicator>
+                                        </Checkbox>
+                                        <Label
+                                            style={{
+                                                paddingLeft: '0.725rem',
+                                                marginTop: '0.5rem',
+                                            }}
+                                            htmlFor="card"
+                                        >
+                                            Cartão
+                                        </Label>
+                                    </Flex>
+                                    <Flex
+                                        style={{
+                                            alignItems: 'center',
+                                            marginLeft: '0.5rem',
+                                        }}
+                                    >
+                                        <Checkbox id="pix">
+                                            <CheckboxIndicator>
+                                                <CheckIcon />
+                                            </CheckboxIndicator>
+                                        </Checkbox>
+                                        <Label
+                                            style={{
+                                                paddingLeft: '0.725rem',
+                                                marginTop: '0.5rem',
+                                            }}
+                                            htmlFor="pix"
+                                        >
+                                            PIX
+                                        </Label>
+                                    </Flex>
+                                    <Flex
+                                        style={{
+                                            alignItems: 'center',
+                                            marginLeft: '0.5rem',
+                                        }}
+                                    >
+                                        <Checkbox id="cheque">
+                                            <CheckboxIndicator>
+                                                <CheckIcon />
+                                            </CheckboxIndicator>
+                                        </Checkbox>
+                                        <Label
+                                            style={{
+                                                paddingLeft: '0.725rem',
+                                                marginTop: '0.5rem',
+                                            }}
+                                            htmlFor="cheque"
+                                        >
+                                            Cheque
+                                        </Label>
+                                    </Flex>
+                                </Flex>
+                            </div>
+                            <InputOrder
+                                name="discount"
+                                label="Valor do Desconto"
+                                type="currency"
+                                error={errors.discount}
+                                onChange={handleDiscountChange}
+                                setFocus={setFocus}
+                                register={register}
+                                style={{ width: '14.5rem' }}
+                            />
+                        </Flex>
+                        <Button
+                            containerStyle={{ marginTop: '1rem' }}
+                            type="submit"
+                        >
+                            Finalizar Faturamento
+                        </Button>
+                        <Button
+                            buttonType="secundary"
+                            containerStyle={{
+                                marginTop: '1rem',
+                                marginLeft: '1rem',
+                            }}
+                            onClick={handleBudget}
+                        >
+                            Enviar Orçamento
+                        </Button>
+                        <Button
+                            buttonType="outline"
+                            containerStyle={{
+                                marginTop: '1rem',
+                                marginLeft: '4rem',
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                    </Form>
                 </ContainerLeft>
                 <ContainerRight>
                     <Container>

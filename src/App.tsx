@@ -3,6 +3,7 @@ import { GlobalStyle, themeStyled } from './styles/globalStyle';
 import AppRoutes from './AppRoutes';
 import { OrderProvider } from './hooks/useOrder';
 import AuthContextProvider from './contexts/AuthContext';
+import { ModalProvider } from './hooks/useModal';
 
 function App() {
     return (
@@ -10,9 +11,11 @@ function App() {
             <GlobalStyle />
             <AuthContextProvider>
                 <OrderProvider>
-                    <ThemeProvider theme={themeStyled}>
-                        <AppRoutes />
-                    </ThemeProvider>
+                    <ModalProvider>
+                        <ThemeProvider theme={themeStyled}>
+                            <AppRoutes />
+                        </ThemeProvider>
+                    </ModalProvider>
                 </OrderProvider>
             </AuthContextProvider>
         </>

@@ -12,7 +12,7 @@ import {
     StyledContent,
     StyledDescription,
     StyledOverlay,
-    StyledTitle
+    StyledTitle,
 } from './style';
 
 interface ContentProps {
@@ -73,7 +73,7 @@ export default function DialogSearchSeller({
                 setNames(responseData);
             })
             .catch(err => {
-                console.log(err.message);
+                alert(err.message);
             });
     }, []);
 

@@ -80,7 +80,7 @@ export default function DialogSearchClient() {
             .catch(err => {
                 console.log(err);
             });
-    }, []);
+    }, [client, setOpen]);
 
     useEffect(() => {
         if (value.length > 0) {
