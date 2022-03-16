@@ -54,9 +54,21 @@ import { useYupValidationResolver } from '../../util/useYupValidationResolver';
 import ScrollArea from '../../components/ScrollArea';
 import DialogSearchSeller from '../../components/DialogSearchSeller';
 import { useSeller } from '../../hooks/useSeller';
+import errorResolverFirebase from '../../util/errorResolverFirebase';
 
 type FormValues = {
     name: string;
+    whats: string;
+    address: string;
+    number: string;
+    district: string;
+    complement: string;
+    city: string;
+    postalcode: string;
+    deliverydate: string;
+    deliveryhour: string;
+    deliveryprice: string;
+    discount: string;
 };
 
 export default function Page() {
@@ -72,17 +84,43 @@ export default function Page() {
         /* deliverydate: yup
             .date()
             .min(new Date(), 'Selecionar uma data posterior a hoje')
-            .required('Campo obrigatório'),
+            .required('Campo obrigatório'), */
         deliveryhour: yup.string().required('Hora obrigatória'),
         address: yup.string().required('Endereço obrigatório'),
         number: yup.string().required('Número obrigatório'),
-        district: yup.string().required('Bairro obrigatório'), */
+        district: yup.string().required('Bairro obrigatório'),
     });
 
     const { register, handleSubmit, formState, setError, setFocus, setValue } =
         useForm<FormValues>({
             resolver: useYupValidationResolver(schema),
         });
+
+    const cleanFieldsClient = useCallback(() => {
+        setValue('district', '');
+        setValue('name', '');
+        setValue('address', '');
+        setValue('number', '');
+        setValue('city', '');
+        setValue('postalcode', '');
+        setValue('complement', '');
+        setValue('whats', '');
+    }, [setValue]);
+
+    useEffect(() => {
+        cleanFieldsClient();
+        if (client) {
+            setValue('district', client.district);
+            setValue('name', client.name);
+            setValue('address', client.address);
+            setValue('number', client.number);
+            setValue('city', client.city);
+            setValue('postalcode', client.postalcode);
+            setValue('complement', client.complement);
+            setValue('whats', client.whatsapp);
+        }
+    }, [client, setValue, cleanFieldsClient]);
+
     const { errors } = formState;
 
     const {
@@ -140,9 +178,24 @@ export default function Page() {
 
     async function handleBudget() {
         await handleSubmit(async data => {
-            console.log('oie');
-            console.log(data.name);
-        });
+            try {
+                console.log(data.name);
+                console.log(data.whats);
+                console.log(data.address);
+                console.log(data.number);
+                console.log(data.district);
+                console.log(data.complement);
+                console.log(data.city);
+                console.log(data.postalcode);
+                console.log(data.deliverydate);
+                console.log(data.deliveryhour);
+                console.log(data.deliveryprice);
+                console.log(data.discount);
+            } catch (err) {
+                const error = errorResolverFirebase(err);
+                alert(error);
+            }
+        })();
     }
 
     // const handleBudget = useCallback(async () => {
@@ -242,7 +295,6 @@ export default function Page() {
                                 name="name"
                                 label="Nome"
                                 error={errors.name}
-                                value={client?.name}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '21.25rem' }}
@@ -252,7 +304,6 @@ export default function Page() {
                                 label="Celular/WhatsApp"
                                 type="telephone"
                                 error={errors.whats}
-                                value={client?.whatsapp}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '15.625rem' }}
@@ -263,7 +314,6 @@ export default function Page() {
                                 name="address"
                                 label="Endereço"
                                 error={errors.address}
-                                value={client?.address}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '21.25rem' }}
@@ -272,7 +322,6 @@ export default function Page() {
                                 name="number"
                                 label="Número"
                                 error={errors.number}
-                                value={client?.number}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '15.625rem' }}
@@ -283,7 +332,6 @@ export default function Page() {
                                 name="district"
                                 label="Bairro"
                                 error={errors.district}
-                                value={client?.district}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '21.25rem' }}
@@ -292,7 +340,6 @@ export default function Page() {
                                 name="complement"
                                 label="Complemento"
                                 error={errors.complement}
-                                value={client?.complement}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '15.625rem' }}
@@ -303,7 +350,6 @@ export default function Page() {
                                 name="city"
                                 label="Cidade"
                                 error={errors.city}
-                                value={client?.city}
                                 setFocus={setFocus}
                                 register={register}
                                 style={{ width: '21.25rem' }}
@@ -312,7 +358,6 @@ export default function Page() {
                                 name="postalcode"
                                 label="CEP"
                                 error={errors.postalcode}
-                                value={client?.cep}
                                 type="postalcode"
                                 setFocus={setFocus}
                                 register={register}
@@ -499,7 +544,6 @@ export default function Page() {
                                 marginTop: '1rem',
                                 marginLeft: '1rem',
                             }}
-                            onClick={handleBudget}
                         >
                             Enviar Orçamento
                         </Button>
