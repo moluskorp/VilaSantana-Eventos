@@ -55,6 +55,8 @@ import ScrollArea from '../../components/ScrollArea';
 import DialogSearchSeller from '../../components/DialogSearchSeller';
 import { useSeller } from '../../hooks/useSeller';
 import errorResolverFirebase from '../../util/errorResolverFirebase';
+import InputDay from '../../components/InputDay';
+import InputDiv from '../../components/InputDiv';
 
 type FormValues = {
     name: string;
@@ -71,6 +73,13 @@ type FormValues = {
     discount: string;
 };
 
+const payment = {
+    money: true,
+    card: false,
+    pix: false,
+    check: false,
+};
+
 export default function Page() {
     const formRef = useRef<FormHandles>(null);
     const { user } = useAuth();
@@ -78,6 +87,8 @@ export default function Page() {
     const navigate = useNavigate();
     const { open, setOpen } = useModal();
     const [modalSellerOpen, setModalSellerOpen] = useState(false);
+    const [selectedDay, setSelectedDay] = useState(new Date());
+    const [tipoEntrega, setTipoEntrega] = useState('entrega');
 
     const schema = yup.object().shape({
         name: yup.string().required('Nome obrigatório'),
@@ -187,10 +198,16 @@ export default function Page() {
                 console.log(data.complement);
                 console.log(data.city);
                 console.log(data.postalcode);
-                console.log(data.deliverydate);
+                console.log(selectedDay);
                 console.log(data.deliveryhour);
                 console.log(data.deliveryprice);
                 console.log(data.discount);
+                console.log(total);
+                console.log(tipoEntrega);
+                console.log(payment);
+                setError('payment', 'Payment error');
+                console.log(errors.payment);
+                console.log(errors.name);
             } catch (err) {
                 const error = errorResolverFirebase(err);
                 alert(error);
@@ -365,7 +382,12 @@ export default function Page() {
                             />
                         </ContainerLineInput>
                         <TipoEntrega>Tipo de Entrega</TipoEntrega>
-                        <RadioGroup defaultValue="entrega">
+                        <RadioGroup
+                            defaultValue="entrega"
+                            onValueChange={(value: string) => {
+                                setTipoEntrega(value);
+                            }}
+                        >
                             <Flex
                                 style={{
                                     marginTop: '0.5rem',
@@ -405,14 +427,13 @@ export default function Page() {
                         </RadioGroup>
                         <ContainerLineInput>
                             <Flex>
-                                <InputOrder
+                                <InputDay
                                     name="deliverydate"
                                     label="Data de Entrega"
-                                    type="date"
                                     error={errors.deliverydate}
-                                    setFocus={setFocus}
-                                    register={register}
-                                    style={{ width: '12.5rem' }}
+                                    containerStyle={{ width: '12.5rem' }}
+                                    selectedDay={selectedDay}
+                                    setSelectedDay={setSelectedDay}
                                 />
                                 <Flex style={{ marginLeft: '0.5rem' }} />
                                 <InputOrder
@@ -429,7 +450,7 @@ export default function Page() {
                                 name="deliveryprice"
                                 label="Valor da Entrega"
                                 type="currency"
-                                error={errors.deliveryhour}
+                                error={errors.deliveryprice}
                                 onChange={handleDeliveryChange}
                                 setFocus={setFocus}
                                 register={register}
@@ -439,9 +460,17 @@ export default function Page() {
                         <Flex style={{ justifyContent: 'space-between' }}>
                             <div>
                                 <TipoEntrega>Pagamento</TipoEntrega>
-                                <Flex>
+                                <InputDiv error={errors.payment}>
                                     <Flex style={{ alignItems: 'center' }}>
-                                        <Checkbox defaultChecked id="money">
+                                        <Checkbox
+                                            defaultChecked
+                                            id="money"
+                                            onCheckedChange={(
+                                                checked: boolean,
+                                            ) => {
+                                                payment.money = checked;
+                                            }}
+                                        >
                                             <CheckboxIndicator>
                                                 <CheckIcon />
                                             </CheckboxIndicator>
@@ -462,7 +491,14 @@ export default function Page() {
                                             marginLeft: '0.5rem',
                                         }}
                                     >
-                                        <Checkbox id="card">
+                                        <Checkbox
+                                            id="card"
+                                            onCheckedChange={(
+                                                checked: boolean,
+                                            ) => {
+                                                payment.card = checked;
+                                            }}
+                                        >
                                             <CheckboxIndicator>
                                                 <CheckIcon />
                                             </CheckboxIndicator>
@@ -483,7 +519,14 @@ export default function Page() {
                                             marginLeft: '0.5rem',
                                         }}
                                     >
-                                        <Checkbox id="pix">
+                                        <Checkbox
+                                            id="pix"
+                                            onCheckedChange={(
+                                                checked: boolean,
+                                            ) => {
+                                                payment.pix = checked;
+                                            }}
+                                        >
                                             <CheckboxIndicator>
                                                 <CheckIcon />
                                             </CheckboxIndicator>
@@ -504,7 +547,14 @@ export default function Page() {
                                             marginLeft: '0.5rem',
                                         }}
                                     >
-                                        <Checkbox id="cheque">
+                                        <Checkbox
+                                            id="cheque"
+                                            onCheckedChange={(
+                                                checked: boolean,
+                                            ) => {
+                                                payment.check = checked;
+                                            }}
+                                        >
                                             <CheckboxIndicator>
                                                 <CheckIcon />
                                             </CheckboxIndicator>
@@ -519,7 +569,7 @@ export default function Page() {
                                             Cheque
                                         </Label>
                                     </Flex>
-                                </Flex>
+                                </InputDiv>
                             </div>
                             <InputOrder
                                 name="discount"

@@ -1,11 +1,7 @@
 import { InputHTMLAttributes, useCallback, useState } from 'react';
-import DayPickerInput from 'react-day-picker/DayPickerInput';
-import DayPicker, { DayModifiers } from 'react-day-picker';
-import 'react-day-picker/lib/style.css';
 
 import { FieldError } from 'react-hook-form';
 import { Container, ErrorMessage, ContainerInput, Nav, Flex } from './style';
-import formatDate from '../../util/formatDate';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     name: string;
@@ -107,10 +103,6 @@ export default function InputOrder({
         [type],
     );
 
-    function formatDateInput(date: Date) {
-        return formatDate(date);
-    }
-
     const placeHolder =
         type === 'time'
             ? '00:00'
@@ -132,57 +124,24 @@ export default function InputOrder({
             >
                 <ContainerInput isInvalid={!!error} isFocused={isFocused}>
                     {type === 'currency' && <span>R$</span>}
-                    {type !== 'date' ? (
-                        <input
-                            name={name}
-                            id={name}
-                            {...register(name)}
-                            type={
-                                type === 'password'
-                                    ? 'password'
-                                    : type === 'email'
-                                    ? 'email'
-                                    : ''
-                            }
-                            placeHolder={placeHolder}
-                            onKeyPress={event => {
-                                handleInputNumber(event);
-                            }}
-                            {...rest}
-                        />
-                    ) : (
-                        <DayPickerInput
-                            formatDate={formatDateInput}
-                            format="dd/MM/yyyy"
-                            placeholder={`${formatDate(new Date())}`}
-                            dayPickerProps={{
-                                weekdaysShort: [
-                                    'D',
-                                    'S',
-                                    'T',
-                                    'Q',
-                                    'Q',
-                                    'S',
-                                    'S',
-                                ],
-                                fromMonth: new Date(),
-                                months: [
-                                    'Janeiro',
-                                    'Fevereiro',
-                                    'Março',
-                                    'Abril',
-                                    'Maio',
-                                    'Junho',
-                                    'Julho',
-                                    'Agosto',
-                                    'Setembro',
-                                    'Outubro',
-                                    'Novembro',
-                                    'Dezembro',
-                                ],
-                            }}
-                        />
-                    )}
+
+                    <input
+                        name={name}
+                        id={name}
+                        {...register(name)}
+                        type={
+                            type === 'password'
+                                ? 'password'
+                                : type === 'email'
+                                ? 'email'
+                                : ''
+                        }
+                        placeHolder={placeHolder}
+                        onKeyPress={event => {
+                            handleInputNumber(event);
+                        }}
+                        {...rest}
+                    />
                 </ContainerInput>
             </Container>
             {!!error && <ErrorMessage>{error.message}</ErrorMessage>}
