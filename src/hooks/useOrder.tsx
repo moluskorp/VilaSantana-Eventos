@@ -20,7 +20,11 @@ type Client = {
     cpf: string;
     name: string;
     whatsapp: string;
-    address: string;
+    address: Address;
+};
+
+type Address = {
+    street: string;
     number: string;
     district: string;
     complement: string;
@@ -30,6 +34,13 @@ type Client = {
 
 interface OrderProviderProps {
     children: ReactNode;
+}
+
+interface Payment {
+    money: boolean;
+    pix: boolean;
+    card: boolean;
+    check: boolean;
 }
 
 interface UpdateItemAmount {
@@ -48,6 +59,13 @@ interface OrderContextData {
     delivery: number;
     discount: number;
     subTotal: number;
+    saveOrderOnDb: (
+        client: Client,
+        deliverydate: Date,
+        deliverytime: string,
+        { money, card, pix, check }: Payment,
+        deliverytype: 'entrega' | 'retirada',
+    ) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextData>({} as OrderContextData);
@@ -141,14 +159,27 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
     );
 
     const saveOrderOnDb = useCallback(
-        async (client: Client) => {
+        async (
+            client: Client,
+            deliverydate: Date,
+            deliverytime: string,
+            { money, card, pix, check }: Payment,
+            deliverytype: 'entrega' | 'retirada',
+        ) => {
             await set(ref(database, `orders/`), {
                 createdAt: new Date(),
                 client,
                 items: order,
-                delivery,
+                deliveryprice: delivery,
+                deliverydate,
+                deliverytime,
+                deliverytype,
                 discount,
+                money,
                 total,
+                card,
+                pix,
+                check,
                 subTotal,
             });
         },
@@ -167,6 +198,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             delivery,
             discount,
             subTotal,
+            saveOrderOnDb,
         }),
         [
             removeItem,
@@ -177,6 +209,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             delivery,
             discount,
             subTotal,
+            saveOrderOnDb,
         ],
     );
 

@@ -88,7 +88,9 @@ export default function Page() {
     const { open, setOpen } = useModal();
     const [modalSellerOpen, setModalSellerOpen] = useState(false);
     const [selectedDay, setSelectedDay] = useState(new Date());
-    const [tipoEntrega, setTipoEntrega] = useState('entrega');
+    const [tipoEntrega, setTipoEntrega] = useState<'entrega' | 'retirada'>(
+        'entrega',
+    );
 
     const schema = yup.object().shape({
         name: yup.string().required('Nome obrigatório'),
@@ -142,6 +144,7 @@ export default function Page() {
         delivery: deliveryTotal,
         discount: discountTotal,
         subTotal,
+        saveOrderOnDb,
     } = useOrder();
 
     const { seller } = useSeller();
@@ -190,24 +193,31 @@ export default function Page() {
     async function handleBudget() {
         await handleSubmit(async data => {
             try {
-                console.log(data.name);
-                console.log(data.whats);
-                console.log(data.address);
-                console.log(data.number);
-                console.log(data.district);
-                console.log(data.complement);
-                console.log(data.city);
-                console.log(data.postalcode);
-                console.log(selectedDay);
-                console.log(data.deliveryhour);
-                console.log(data.deliveryprice);
-                console.log(data.discount);
-                console.log(total);
-                console.log(tipoEntrega);
-                console.log(payment);
-                setError('payment', 'Payment error');
-                console.log(errors.payment);
-                console.log(errors.name);
+                if (client) {
+                    const finalClient = {
+                        id: client.id,
+                        name: data.name,
+                        address: {
+                            street: data.address,
+                            number: data.number,
+                            district: data.district,
+                            complement: data.complement,
+                            city: data.city,
+                            postalcode: data.postalcode,
+                        },
+                        cpf: client.cpf,
+                        whatsapp: data.whats,
+                    };
+
+                    await saveOrderOnDb(
+                        finalClient,
+                        selectedDay,
+                        data.deliveryhour,
+                        payment,
+                        tipoEntrega,
+                    );
+                    navigate('/');
+                }
             } catch (err) {
                 const error = errorResolverFirebase(err);
                 alert(error);
