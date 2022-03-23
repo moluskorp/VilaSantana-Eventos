@@ -10,7 +10,7 @@ export default function AppRoutes() {
             <Routes>
                 <Route path="/oi" element={<Order />} />
                 <Route path="/Login" element={<Login />} />
-                <Route path="/home" element={<Home />} />
+                <Route path="/" element={<Home />} />
                 <Route path="/reports" element={<Reports />} />
             </Routes>
         </Router>

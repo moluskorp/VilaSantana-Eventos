@@ -71,6 +71,7 @@ type FormValues = {
     deliveryhour: string;
     deliveryprice: string;
     discount: string;
+    payment: string;
 };
 
 const payment = {
@@ -216,9 +217,10 @@ export default function Page() {
                         payment,
                         tipoEntrega,
                     );
+
                     navigate('/');
                 }
-            } catch (err) {
+            } catch (err: any) {
                 const error = errorResolverFirebase(err);
                 alert(error);
             }
@@ -277,6 +279,7 @@ export default function Page() {
 
     const handleFinish = useCallback(
         event => {
+            // eslint-disable-next-line
             const sendWhatsapp = confirm(
                 'Deseja enviar o faturamento para o whatsapp do cliente?',
             );
@@ -394,7 +397,7 @@ export default function Page() {
                         <TipoEntrega>Tipo de Entrega</TipoEntrega>
                         <RadioGroup
                             defaultValue="entrega"
-                            onValueChange={(value: string) => {
+                            onValueChange={(value: 'entrega' | 'retirada') => {
                                 setTipoEntrega(value);
                             }}
                         >

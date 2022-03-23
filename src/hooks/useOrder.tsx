@@ -1,4 +1,14 @@
-import { ref, set } from 'firebase/database';
+import {
+    endAt,
+    equalTo,
+    get,
+    limitToFirst,
+    orderByChild,
+    query,
+    ref,
+    set,
+    startAt,
+} from 'firebase/database';
 import {
     createContext,
     ReactNode,
@@ -7,7 +17,9 @@ import {
     useMemo,
     useState,
 } from 'react';
+import { v4 as uuidV4 } from 'uuid';
 import { database } from '../services/firebase';
+import formatDateWithoutHoursUTC from '../util/formatDateWithoutHoursUTC';
 
 interface Item {
     name: string;
@@ -30,6 +42,45 @@ type Address = {
     complement: string;
     city: string;
     postalcode: string;
+};
+
+type FirebaseOrder = Record<
+    string,
+    {
+        id: string;
+        client: Client;
+        items: Item[];
+        createdAt: Date;
+        deliveryprice: number;
+        deliveryDate: string;
+        deliverytime: string;
+        deliverytype: string;
+        discount: number;
+        money: boolean;
+        total: number;
+        card: boolean;
+        pix: boolean;
+        check: boolean;
+        subTotal: number;
+    }
+>;
+
+type Order = {
+    id: string;
+    client: Client;
+    items: Item[];
+    createdAt: Date;
+    deliveryprice: number;
+    deliveryDate: string;
+    deliverytime: string;
+    deliverytype: string;
+    discount: number;
+    money: boolean;
+    total: number;
+    card: boolean;
+    pix: boolean;
+    check: boolean;
+    subTotal: number;
 };
 
 interface OrderProviderProps {
@@ -66,6 +117,8 @@ interface OrderContextData {
         { money, card, pix, check }: Payment,
         deliverytype: 'entrega' | 'retirada',
     ) => Promise<void>;
+    getListFromDate: (date: Date) => Promise<Order[]>;
+    getListBetweenDates: (start: Date, end: Date) => Promise<Order[]>;
 }
 
 const OrderContext = createContext<OrderContextData>({} as OrderContextData);
@@ -166,12 +219,13 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             { money, card, pix, check }: Payment,
             deliverytype: 'entrega' | 'retirada',
         ) => {
-            await set(ref(database, `orders/`), {
-                createdAt: new Date(),
+            const id = uuidV4();
+            await set(ref(database, `orders/${id}`), {
+                createdAt: formatDateWithoutHoursUTC(new Date()),
                 client,
                 items: order,
                 deliveryprice: delivery,
-                deliverydate,
+                deliveryDate: formatDateWithoutHoursUTC(deliverydate),
                 deliverytime,
                 deliverytype,
                 discount,
@@ -186,6 +240,78 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         [delivery, discount, total, subTotal, order],
     );
 
+    const getListFromDate = useCallback(async (date: Date) => {
+        try {
+            const dbRefQ = query(
+                ref(database, 'orders'),
+                orderByChild('deliveryDate'),
+                equalTo(formatDateWithoutHoursUTC(date)),
+            );
+
+            const resultFirebase = await get(dbRefQ);
+
+            const result: FirebaseOrder = resultFirebase.val();
+
+            const parsedOrders = Object.entries(result).map(([key, value]) => {
+                return {
+                    id: key,
+                    client: value.client,
+                    items: value.items,
+                    createdAt: value.createdAt,
+                    deliveryprice: value.deliveryprice,
+                    deliveryDate: value.deliveryDate,
+                    deliverytime: value.deliverytime,
+                    deliverytype: value.deliverytype,
+                    discount: value.discount,
+                    money: value.money,
+                    total: value.total,
+                    card: value.card,
+                    pix: value.pix,
+                    check: value.check,
+                    subTotal: value.subTotal,
+                };
+            });
+            return parsedOrders;
+        } catch (err: any) {
+            console.log(err.message);
+        }
+        return {} as Order[];
+    }, []);
+
+    const getListBetweenDates = useCallback(async (start: Date, end: Date) => {
+        const dbRefQ = query(
+            ref(database, 'orders'),
+            orderByChild('deliveryDate'),
+            startAt(formatDateWithoutHoursUTC(start)),
+            endAt(formatDateWithoutHoursUTC(end)),
+        );
+
+        const resultFirebase = await get(dbRefQ);
+
+        const result: FirebaseOrder = resultFirebase.val();
+
+        const parsedOrders = Object.entries(result).map(([key, value]) => {
+            return {
+                id: key,
+                client: value.client,
+                items: value.items,
+                createdAt: value.createdAt,
+                deliveryprice: value.deliveryprice,
+                deliveryDate: value.deliveryDate,
+                deliverytime: value.deliverytime,
+                deliverytype: value.deliverytype,
+                discount: value.discount,
+                money: value.money,
+                total: value.total,
+                card: value.card,
+                pix: value.pix,
+                check: value.check,
+                subTotal: value.subTotal,
+            };
+        });
+        return parsedOrders;
+    }, []);
+
     const value = useMemo(
         () => ({
             removeItem,
@@ -199,6 +325,8 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             discount,
             subTotal,
             saveOrderOnDb,
+            getListFromDate,
+            getListBetweenDates,
         }),
         [
             removeItem,
@@ -210,6 +338,8 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             discount,
             subTotal,
             saveOrderOnDb,
+            getListFromDate,
+            getListBetweenDates,
         ],
     );
 

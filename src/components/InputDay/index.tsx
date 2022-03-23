@@ -19,7 +19,7 @@ interface InputDayProps {
     label?: string;
     error?: FieldError;
     setSelectedDay: (value: Date) => void;
-    selectedDay: string;
+    selectedDay: Date;
 }
 
 export default function InputDay({

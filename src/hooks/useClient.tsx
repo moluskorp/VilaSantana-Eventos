@@ -173,10 +173,8 @@ export function ClientProvider({ children }: ClientProviderProps) {
                     },
                 );
 
-                console.log(parsedClients);
-
                 return parsedClients;
-            } catch (err) {
+            } catch (err: any) {
                 console.log(err.message);
             }
             return {} as Client[];
@@ -229,7 +227,7 @@ export function ClientProvider({ children }: ClientProviderProps) {
                 );
 
                 return parsedClients;
-            } catch (err) {
+            } catch (err: any) {
                 console.log(err.message);
             }
             return {} as Client[];

@@ -19,8 +19,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
         | 'password'
         | 'email';
     containerStyle?: object;
-    setFocus: (input: string) => void;
-    register: (field: string) => void;
+    setFocus: (input: any) => void;
+    register: (field: any) => void;
 }
 
 export default function InputOrder({
@@ -137,7 +137,7 @@ export default function InputOrder({
                                 : ''
                         }
                         placeHolder={placeHolder}
-                        onKeyPress={event => {
+                        onKeyPress={(event: any) => {
                             handleInputNumber(event);
                         }}
                         {...rest}

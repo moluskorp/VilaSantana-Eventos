@@ -16,7 +16,29 @@ export const Nav = styled.div`
 export const Container = styled.div`
     display: flex;
     flex: 1;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
     flex-direction: column;
+    margin-top: 2rem;
+`;
+
+export const Flex = styled.div`
+    display: flex;
+`;
+
+export const ContainerOrders = styled.div`
+    display: flex;
+    width: 100%;
+    margin-top: 1rem;
+    justify-content: space-between;
+    padding: 0.5rem;
+
+    transition: background-color 0.5s;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        border: 1 px solid black;
+        border-radius: 10px;
+        box-shadow: 4px 4px 3px 3px rgba(0, 0, 0, 0.1);
+    }
 `;
