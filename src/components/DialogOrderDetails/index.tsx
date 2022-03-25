@@ -1,5 +1,14 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import React, { forwardRef, ReactNode, useMemo, useState } from 'react';
+import React, {
+    forwardRef,
+    ForwardRefRenderFunction,
+    ReactNode,
+    Ref,
+    useCallback,
+    useImperativeHandle,
+    useMemo,
+    useState,
+} from 'react';
 import { formatPrice } from '../../util/format';
 import Accordion from '../Accordion';
 import ProductTable from '../ProductTable';
@@ -56,12 +65,18 @@ type Order = {
     total: number;
 };
 
-interface DialogOrderDetailsProps {
-    children: ReactNode;
-    order: Order;
-}
+type DialogOrderDetailsProps = ForwardRefRenderFunction<
+    ModalHandles,
+    DialogOrderDetailsCustomProps
+>;
 
-interface ContentProps {
+type DialogOrderDetailsCustomProps = {
+    children: ReactNode;
+    onDelete: (id: string) => void;
+    order: Order;
+};
+
+interface ContentProps extends DialogPrimitive.DialogContentProps {
     children: ReactNode;
 }
 
@@ -74,16 +89,41 @@ function Content({ children, ...props }: ContentProps) {
     );
 }
 
-export default function DialogOrderDetails({
-    children,
-    order,
-}: DialogOrderDetailsProps) {
+export interface ModalHandles {
+    openModal: (/* order: Order */) => void;
+    setOrder: (order: Order) => void;
+}
+
+const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
+    { order: orderProps, children, onDelete }: DialogOrderDetailsCustomProps,
+    ref,
+) {
     const Dialog = DialogPrimitive.Root;
     const DialogTrigger = DialogPrimitive.Trigger;
     const DialogContent = Content;
     const DialogTitle = StyledTitle;
     const DialogDescription = StyledDescription;
     const DialogClose = DialogPrimitive.Close;
+    const [open, setOpen] = useState(false);
+    const [order, setOrder] = useState<Order>(orderProps);
+
+    // const openModal = useCallback((orderChange: Order) => {
+    //     setOrder(orderChange);
+    //     setOpen(true);
+    // }, []);
+
+    useImperativeHandle(ref, () => {
+        return {
+            openModal: () => {
+                setOpen(true);
+            },
+            setOrder: (newOrder: Order) => setOrder(newOrder),
+        };
+    });
+
+    const closeModal = useCallback(() => {
+        setOpen(false);
+    }, []);
 
     const subTotalFormatted = useMemo(
         () => formatPrice(order.subTotal),
@@ -115,20 +155,44 @@ export default function DialogOrderDetails({
     );
 
     return (
-        <Dialog>
+        <Dialog
+            open={open}
+            onOpenChange={openDialog => {
+                if (openDialog === false) {
+                    console.log('saiu');
+                }
+            }}
+        >
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
+            <DialogContent
+                onEscapeKeyDown={event => {
+                    closeModal();
+                }}
+            >
                 <DialogTitle>Detalhes do pedido</DialogTitle>
                 <DialogDescription>Veja aqui os detalhes</DialogDescription>
-                <TrashIconOrder />
+                <TrashIconOrder
+                    onClick={() => {
+                        alert('Será excluido');
+                        onDelete(order.id);
+                        closeModal();
+                    }}
+                />
                 <h3 style={{ marginTop: '1rem' }}>Cliente</h3>
-                <p>Nome: {order.client.name} </p>
+                <p style={{ marginTop: '0.5rem' }}>
+                    Nome: {order.client.name}{' '}
+                </p>
                 <Flex style={{ justifyContent: 'space-between' }}>
                     <p>Cpf: {order.client.cpf}</p>
                     <p>WhatsApp: {order.client.whatsapp}</p>
                 </Flex>
                 <h3 style={{ marginTop: '1rem' }}>Endereço de entrega</h3>
-                <Flex style={{ justifyContent: 'space-between' }}>
+                <Flex
+                    style={{
+                        justifyContent: 'space-between',
+                        marginTop: '0.5rem',
+                    }}
+                >
                     <p>Rua: {order.client.address.street}</p>
                     <p>Número: {order.client.address.number}</p>
                 </Flex>
@@ -146,7 +210,12 @@ export default function DialogOrderDetails({
                 </Accordion>
 
                 <h3 style={{ marginTop: '1rem' }}>Totais</h3>
-                <Flex style={{ justifyContent: 'space-between' }}>
+                <Flex
+                    style={{
+                        justifyContent: 'space-between',
+                        marginTop: '0.5rem',
+                    }}
+                >
                     <p>Sub-Total:</p>
                     <p> {subTotalFormatted}</p>
                 </Flex>
@@ -158,14 +227,20 @@ export default function DialogOrderDetails({
                     <p>Frete:</p>
                     <p> {deliveryPriceFormatted}</p>
                 </Flex>
-                <Flex style={{ justifyContent: 'space-between' }}>
+                <Flex
+                    style={{
+                        justifyContent: 'space-between',
+                        marginTop: '0.5rem',
+                    }}
+                >
                     <h2>Total:</h2>
                     <h2> {totalFormatted}</h2>
                 </Flex>
-                <DialogClose asChild>
-                    <CloseIcon />
-                </DialogClose>
+
+                <CloseIcon onClick={() => closeModal()} />
             </DialogContent>
         </Dialog>
     );
-}
+};
+
+export const DialogOrderDetails = forwardRef(DialogOrderDetailsBase);

@@ -1,7 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+    createRef,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/Button';
-import DialogOrderDetails from '../../components/DialogOrderDetails';
+import {
+    DialogOrderDetails,
+    ModalHandles,
+} from '../../components/DialogOrderDetails';
 import Divider from '../../components/Divider';
 import Footer from '../../components/Footer';
 import Header from '../../components/Header';
@@ -17,7 +27,7 @@ type Order = {
     items: Item[];
     createdAt: Date;
     deliveryprice: number;
-    deliveryDate: string;
+    deliveryDate: Date;
     deliverytime: string;
     deliverytype: string;
     discount: number;
@@ -56,20 +66,9 @@ export default function Home() {
     const { createUserWithEmail, loginWithEmail } = useAuth();
     const { getListFromDate, getListBetweenDates } = useOrder();
     const [orders, setOrders] = useState<Order[]>([] as Order[]);
+    const modalRef = useRef<ModalHandles>(null);
 
     useEffect(() => {
-        // getListFromDate(new Date('2022-03-22 03:00'))
-        //     .then(result => {
-        //         console.log(result);
-        //         if (result) {
-        //             setOrders(result);
-        //         }
-        //     })
-        //     .catch(err => {
-        //         const error = errorResolverFirebase(err);
-        //         alert(error);
-        //     });
-
         getListBetweenDates(
             new Date('2022-03-21 03:00'),
             new Date('2022-03-24 03:00'),
@@ -93,7 +92,8 @@ export default function Home() {
 
     const ordersFormatted = useMemo(() => {
         return orders.map(order => {
-            const date = order.deliveryDate.concat(' 03:00');
+            const dateString = order.deliveryDate.toString();
+            const date = dateString.concat(' 03:00');
             const deliveryDateDate = new Date(date);
             console.log(order);
             return {
@@ -120,6 +120,14 @@ export default function Home() {
             alert(error);
         }
     }
+
+    const handleDeleteOrder = useCallback(
+        async (id: string) => {
+            const newOrders = orders.filter(order => order.id !== id);
+            setOrders(newOrders);
+        },
+        [orders],
+    );
 
     return (
         <>
@@ -175,8 +183,19 @@ export default function Home() {
                         </Flex>
                         {ordersFormatted.map(order => (
                             <React.Fragment key={order.id}>
-                                <DialogOrderDetails order={order}>
-                                    <ContainerOrders>
+                                <DialogOrderDetails
+                                    onDelete={(id: string) => {
+                                        handleDeleteOrder(id);
+                                    }}
+                                    ref={modalRef}
+                                    order={order}
+                                >
+                                    <ContainerOrders
+                                        onClick={() => {
+                                            modalRef.current?.setOrder(order);
+                                            modalRef.current?.openModal();
+                                        }}
+                                    >
                                         <Flex
                                             style={{ flexDirection: 'column' }}
                                         >
