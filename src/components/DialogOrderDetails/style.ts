@@ -7,6 +7,7 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import closeIcon from '../../assets/close.svg';
 import trashIcon from '../../assets/trash.svg';
+import addIcon from '../../assets/add-white.svg';
 
 interface StyledContentAccordionProps {
     dataState: 'open' | 'closed';
@@ -204,4 +205,24 @@ export const TestAnimation = styled.div<TestAnimationProps>`
 
     animation: ${props => (props.status === 'open' ? slideDown : slideUp)} 300ms
         cubic-bezier(0.87, 0, 0.13, 1) forwards;
+`;
+
+export const AddButton = styled.button`
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: ${props => props.theme.blue};
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    border-radius: 10px;
+    box-shadow: 2px 2px 3px 1px rgba(92, 166, 191, 0.35);
+`;
+
+export const AddIcon = styled.div`
+    background: url(${addIcon}) no-repeat center;
+    width: 2.5rem;
+    height: 2.5rem;
+
+    margin: 16px 0 16px 0;
 `;

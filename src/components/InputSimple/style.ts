@@ -1,7 +1,6 @@
 import styled, { css } from 'styled-components';
 
 interface ContainerProps {
-    isInvalid: boolean;
     isFocused: boolean;
 }
 
@@ -19,11 +18,6 @@ export const Container = styled.div<ContainerProps>`
     ${props => {
         if (props.isFocused) {
             return css``;
-        }
-        if (props.isInvalid) {
-            return css`
-                border: 0.125rem solid red;
-            `;
         }
         return css``;
     }}
@@ -50,13 +44,17 @@ export const ErrorMessage = styled.text`
 export const ContainerInput = styled.div<ContainerProps>`
     width: 100%;
     margin-left: 0.25rem;
+    display: flex;
+    align-items: center;
 
     input {
         background-color: transparent;
         height: 30px;
-        margin-left: 0.25rem;
         font-weight: 500;
+        margin-right: 0.5rem;
         width: 100%;
+
+        text-align: right;
     }
 `;
 

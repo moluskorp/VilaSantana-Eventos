@@ -42,3 +42,25 @@ export const ContainerOrders = styled.div`
         box-shadow: 4px 4px 3px 3px rgba(0, 0, 0, 0.1);
     }
 `;
+
+interface PendentesProps {
+    orderStatus: 'pendente' | 'completo';
+}
+
+export const Pendentes = styled.p<PendentesProps>`
+    color: ${props =>
+        props.orderStatus === 'pendente' ? props.theme.pink : 'black'};
+
+    &:hover {
+        cursor: pointer;
+    }
+`;
+
+export const Completas = styled.p<PendentesProps>`
+    color: ${props =>
+        props.orderStatus === 'completo' ? props.theme.pink : 'black'};
+
+    &:hover {
+        cursor: pointer;
+    }
+`;

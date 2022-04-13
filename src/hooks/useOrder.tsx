@@ -3,11 +3,14 @@ import {
     equalTo,
     get,
     limitToFirst,
+    onValue,
     orderByChild,
     query,
     ref,
+    remove,
     set,
     startAt,
+    update,
 } from 'firebase/database';
 import {
     createContext,
@@ -62,6 +65,7 @@ type FirebaseOrder = Record<
         pix: boolean;
         check: boolean;
         subTotal: number;
+        status: 'pendente' | 'completo';
     }
 >;
 
@@ -81,6 +85,7 @@ type Order = {
     pix: boolean;
     check: boolean;
     subTotal: number;
+    status: 'pendente' | 'completo';
 };
 
 interface OrderProviderProps {
@@ -116,9 +121,21 @@ interface OrderContextData {
         deliverytime: string,
         { money, card, pix, check }: Payment,
         deliverytype: 'entrega' | 'retirada',
+        status: 'pendente' | 'completo',
+    ) => Promise<void>;
+    updateOrderOnDb: (
+        id: string,
+        client: Client,
+        deliverydate: Date,
+        deliverytime: string,
+        { money, card, pix, check }: Payment,
+        deliverytype: 'entrega' | 'retirada',
+        status: 'pendente' | 'completo',
     ) => Promise<void>;
     getListFromDate: (date: Date) => Promise<Order[]>;
-    getListBetweenDates: (start: Date, end: Date) => Promise<Order[]>;
+    getListBetweenDates: (data: any) => Order[];
+    deleteOrder: (id: string) => Promise<void>;
+    updateOrderOnDbWithOrder: (order: Order) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextData>({} as OrderContextData);
@@ -235,10 +252,66 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
                 pix,
                 check,
                 subTotal,
+                status: 'pendente',
             });
         },
         [delivery, discount, total, subTotal, order],
     );
+
+    const updateOrderOnDb = useCallback(
+        async (
+            id: string,
+            client: Client,
+            deliverydate: Date,
+            deliverytime: string,
+            { money, card, pix, check }: Payment,
+            deliverytype: 'entrega' | 'retirada',
+            status: 'pendente' | 'completo',
+        ) => {
+            await update(ref(database, `orders/${id}`), {
+                createdAt: formatDateWithoutHoursUTC(new Date()),
+                client,
+                items: order,
+                deliveryprice: delivery,
+                deliveryDate: formatDateWithoutHoursUTC(deliverydate),
+                deliverytime,
+                deliverytype,
+                discount,
+                money,
+                total,
+                card,
+                pix,
+                check,
+                subTotal,
+                status,
+            });
+        },
+        [delivery, discount, total, subTotal, order],
+    );
+
+    const updateOrderOnDbWithOrder = useCallback(async (updateOrder: Order) => {
+        try {
+            await update(ref(database, `orders/${updateOrder.id}`), {
+                createdAt: updateOrder.createdAt,
+                client: updateOrder.client,
+                items: updateOrder.items,
+                deliveryprice: updateOrder.deliveryprice,
+                deliveryDate: updateOrder.deliveryDate,
+                deliverytime: updateOrder.deliverytime,
+                deliverytype: updateOrder.deliverytype,
+                discount: updateOrder.discount,
+                money: updateOrder.money,
+                total: updateOrder.total,
+                card: updateOrder.card,
+                pix: updateOrder.pix,
+                check: updateOrder.check,
+                subTotal: updateOrder.subTotal,
+                status: updateOrder.status,
+            });
+        } catch (err: any) {
+            console.log(err.message);
+        }
+    }, []);
 
     const getListFromDate = useCallback(async (date: Date) => {
         try {
@@ -269,6 +342,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
                     pix: value.pix,
                     check: value.check,
                     subTotal: value.subTotal,
+                    status: value.status,
                 };
             });
             return parsedOrders;
@@ -278,17 +352,42 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         return {} as Order[];
     }, []);
 
-    const getListBetweenDates = useCallback(async (start: Date, end: Date) => {
-        const dbRefQ = query(
-            ref(database, 'orders'),
-            orderByChild('deliveryDate'),
-            startAt(formatDateWithoutHoursUTC(start)),
-            endAt(formatDateWithoutHoursUTC(end)),
-        );
+    // const getListBetweenDates = useCallback(async (start: Date, end: Date) => {
+    //     const dbRefQ = query(
+    //         ref(database, 'orders'),
+    //         orderByChild('deliveryDate'),
+    //         startAt(formatDateWithoutHoursUTC(start)),
+    //         endAt(formatDateWithoutHoursUTC(end)),
+    //     );
 
-        const resultFirebase = await get(dbRefQ);
+    //     const resultFirebase = await get(dbRefQ);
 
-        const result: FirebaseOrder = resultFirebase.val();
+    //     const result: FirebaseOrder = resultFirebase.val();
+
+    //     const parsedOrders = Object.entries(result).map(([key, value]) => {
+    //         return {
+    //             id: key,
+    //             client: value.client,
+    //             items: value.items,
+    //             createdAt: value.createdAt,
+    //             deliveryprice: value.deliveryprice,
+    //             deliveryDate: value.deliveryDate,
+    //             deliverytime: value.deliverytime,
+    //             deliverytype: value.deliverytype,
+    //             discount: value.discount,
+    //             money: value.money,
+    //             total: value.total,
+    //             card: value.card,
+    //             pix: value.pix,
+    //             check: value.check,
+    //             subTotal: value.subTotal,
+    //         };
+    //     });
+    //     return parsedOrders;
+    // }, []);
+
+    const getListBetweenDates = useCallback((data: any) => {
+        const result: FirebaseOrder = data;
 
         const parsedOrders = Object.entries(result).map(([key, value]) => {
             return {
@@ -307,9 +406,15 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
                 pix: value.pix,
                 check: value.check,
                 subTotal: value.subTotal,
+                status: value.status,
             };
         });
+
         return parsedOrders;
+    }, []);
+
+    const deleteOrder = useCallback(async (id: string) => {
+        await remove(ref(database, `orders/${id}`));
     }, []);
 
     const value = useMemo(
@@ -327,6 +432,10 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             saveOrderOnDb,
             getListFromDate,
             getListBetweenDates,
+            deleteOrder,
+            updateOrderOnDb,
+            setOrder,
+            updateOrderOnDbWithOrder,
         }),
         [
             removeItem,
@@ -340,6 +449,9 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             saveOrderOnDb,
             getListFromDate,
             getListBetweenDates,
+            deleteOrder,
+            updateOrderOnDb,
+            updateOrderOnDbWithOrder,
         ],
     );
 

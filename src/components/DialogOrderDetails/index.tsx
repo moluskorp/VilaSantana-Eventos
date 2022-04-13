@@ -3,24 +3,32 @@ import React, {
     forwardRef,
     ForwardRefRenderFunction,
     ReactNode,
-    Ref,
     useCallback,
+    useEffect,
     useImperativeHandle,
     useMemo,
+    useRef,
     useState,
 } from 'react';
+import { useOrder } from '../../hooks/useOrder';
 import { formatPrice } from '../../util/format';
 import Accordion from '../Accordion';
+import Button from '../Button';
+import {
+    DialogAddProductOrderDetails,
+    ModalDialogAddProductOrderDetailsHandles,
+} from '../DialogAddProductOrderDetails';
+import InputSimple from '../InputSimple';
 import ProductTable from '../ProductTable';
 import {
+    AddButton,
+    AddIcon,
     CloseIcon,
     Flex,
-    Form,
     StyledContent,
     StyledDescription,
     StyledOverlay,
     StyledTitle,
-    TrashIcon,
     TrashIconOrder,
 } from './style';
 
@@ -53,16 +61,18 @@ type Order = {
     check: boolean;
     client: Client;
     createdAt: Date;
-    deliveryDate: Date;
+    deliveryDate: string;
     deliveryprice: number;
     deliverytime: string;
     deliverytype: string;
+    deliveryTypeFormatted: string;
     discount: number;
     items: Item[];
     money: boolean;
     pix: boolean;
     subTotal: number;
     total: number;
+    status: 'pendente' | 'completo';
 };
 
 type DialogOrderDetailsProps = ForwardRefRenderFunction<
@@ -98,26 +108,63 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
     { order: orderProps, children, onDelete }: DialogOrderDetailsCustomProps,
     ref,
 ) {
+    const modalRef = useRef<ModalDialogAddProductOrderDetailsHandles>(null);
     const Dialog = DialogPrimitive.Root;
     const DialogTrigger = DialogPrimitive.Trigger;
     const DialogContent = Content;
     const DialogTitle = StyledTitle;
     const DialogDescription = StyledDescription;
-    const DialogClose = DialogPrimitive.Close;
     const [open, setOpen] = useState(false);
     const [order, setOrder] = useState<Order>(orderProps);
+    const [discount, setDiscount] = useState(order.discount.toString());
+    const [delivery, setDelivery] = useState(order.deliveryprice.toString());
+    const { updateOrderOnDbWithOrder } = useOrder();
 
-    // const openModal = useCallback((orderChange: Order) => {
-    //     setOrder(orderChange);
-    //     setOpen(true);
-    // }, []);
+    const inputDisabled = useMemo(
+        () => order.status !== 'pendente',
+        [order.status],
+    );
+
+    const subTotal = useMemo(
+        () =>
+            order.items.reduce(
+                (sumTotal, item) => sumTotal + item.quantity * item.price,
+                0,
+            ),
+        [order.items],
+    );
+
+    const total = useMemo(() => {
+        const discountTotal = Number(discount.replace(',', '.'));
+        const deliveryTotal = Number(delivery.replace(',', '.'));
+        return subTotal - discountTotal + deliveryTotal;
+    }, [delivery, discount, subTotal]);
+
+    useEffect(() => {
+        // oie
+    }, [subTotal, total]);
+
+    const setItems = useCallback(
+        async (items: Item[]) => {
+            const newOrder = {
+                ...order,
+                items,
+            };
+            setOrder(newOrder);
+        },
+        [order],
+    );
 
     useImperativeHandle(ref, () => {
         return {
             openModal: () => {
                 setOpen(true);
             },
-            setOrder: (newOrder: Order) => setOrder(newOrder),
+            setOrder: (newOrder: Order) => {
+                setOrder(newOrder);
+                setDiscount(newOrder.discount.toString());
+                setDelivery(newOrder.deliveryprice.toString());
+            },
         };
     });
 
@@ -125,22 +172,9 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
         setOpen(false);
     }, []);
 
-    const subTotalFormatted = useMemo(
-        () => formatPrice(order.subTotal),
-        [order.subTotal],
-    );
-    const totalFormatted = useMemo(
-        () => formatPrice(order.total),
-        [order.total],
-    );
-    const deliveryPriceFormatted = useMemo(
-        () => formatPrice(order.deliveryprice),
-        [order.deliveryprice],
-    );
-    const discountFormatted = useMemo(
-        () => formatPrice(order.discount),
-        [order.discount],
-    );
+    const subTotalFormatted = useMemo(() => formatPrice(subTotal), [subTotal]);
+
+    const totalFormatted = useMemo(() => formatPrice(total), [total]);
 
     const itensFormatted = useMemo(
         () =>
@@ -154,30 +188,53 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
         [order.items],
     );
 
+    const handleSaveOrder = useCallback(() => {
+        const updateOrder = {
+            ...order,
+            discount: Number(discount),
+            deliveryprice: Number(delivery),
+            subTotal,
+            total,
+        };
+        updateOrderOnDbWithOrder(updateOrder);
+    }, [delivery, discount, order, updateOrderOnDbWithOrder, total, subTotal]);
+
+    const handleFinishOrder = useCallback(() => {
+        const updateOrder = {
+            ...order,
+            discount: Number(discount),
+            deliveryprice: Number(delivery),
+            subTotal,
+            total,
+            status: order.status === 'pendente' ? 'completo' : 'pendente',
+        } as Order;
+        updateOrderOnDbWithOrder(updateOrder);
+        setOpen(false);
+    }, [delivery, discount, subTotal, total, order, updateOrderOnDbWithOrder]);
+
     return (
-        <Dialog
-            open={open}
-            onOpenChange={openDialog => {
-                if (openDialog === false) {
-                    console.log('saiu');
-                }
-            }}
-        >
+        <Dialog open={open}>
             <DialogTrigger asChild>{children}</DialogTrigger>
             <DialogContent
                 onEscapeKeyDown={event => {
+                    event.preventDefault();
                     closeModal();
                 }}
             >
-                <DialogTitle>Detalhes do pedido</DialogTitle>
-                <DialogDescription>Veja aqui os detalhes</DialogDescription>
-                <TrashIconOrder
-                    onClick={() => {
-                        alert('Será excluido');
-                        onDelete(order.id);
-                        closeModal();
-                    }}
-                />
+                <DialogTitle>{order.deliveryTypeFormatted}</DialogTitle>
+                <DialogDescription>
+                    Horário : {order.deliverytime}
+                </DialogDescription>
+                {order.status === 'pendente' && (
+                    <TrashIconOrder
+                        onClick={() => {
+                            alert('Será excluido');
+                            onDelete(order.id);
+                            closeModal();
+                        }}
+                    />
+                )}
+
                 <h3 style={{ marginTop: '1rem' }}>Cliente</h3>
                 <p style={{ marginTop: '0.5rem' }}>
                     Nome: {order.client.name}{' '}
@@ -204,9 +261,35 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
                     <p>Cidade: {order.client.address.city}</p>
                     <p>Cep: {order.client.address.postalcode}</p>
                 </Flex>
+                {order.status === 'pendente' && (
+                    <Flex
+                        style={{
+                            justifyContent: 'flex-end',
+                            marginTop: '1rem',
+                        }}
+                    >
+                        <DialogAddProductOrderDetails
+                            order={order}
+                            setOrder={setOrder}
+                            ref={modalRef}
+                        >
+                            <AddButton
+                                onClick={() => {
+                                    modalRef.current?.openModal();
+                                }}
+                            >
+                                <AddIcon />
+                            </AddButton>
+                        </DialogAddProductOrderDetails>
+                    </Flex>
+                )}
                 <Accordion>
                     <Flex style={{ marginTop: '1rem' }} />
-                    <ProductTable items={itensFormatted} />
+                    <ProductTable
+                        items={itensFormatted}
+                        setItems={setItems}
+                        status={order.status}
+                    />
                 </Accordion>
 
                 <h3 style={{ marginTop: '1rem' }}>Totais</h3>
@@ -219,13 +302,40 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
                     <p>Sub-Total:</p>
                     <p> {subTotalFormatted}</p>
                 </Flex>
-                <Flex style={{ justifyContent: 'space-between' }}>
+                <Flex
+                    style={{
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginTop: '0.5rem',
+                    }}
+                >
                     <p>Desconto:</p>
-                    <p> {discountFormatted}</p>
+
+                    <InputSimple
+                        name="discount"
+                        value={discount}
+                        type="currency"
+                        disabled={inputDisabled}
+                        onChange={e => {
+                            setDiscount(e.target.value);
+                        }}
+                    />
                 </Flex>
-                <Flex style={{ justifyContent: 'space-between' }}>
+                <Flex
+                    style={{
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginTop: '0.5rem',
+                    }}
+                >
                     <p>Frete:</p>
-                    <p> {deliveryPriceFormatted}</p>
+                    <InputSimple
+                        name="delivery"
+                        value={delivery}
+                        disabled={inputDisabled}
+                        type="currency"
+                        onChange={e => setDelivery(e.target.value)}
+                    />
                 </Flex>
                 <Flex
                     style={{
@@ -238,6 +348,47 @@ const DialogOrderDetailsBase: DialogOrderDetailsProps = function (
                 </Flex>
 
                 <CloseIcon onClick={() => closeModal()} />
+
+                <Flex>
+                    <Flex style={{ alignItems: 'center', marginTop: '2rem' }}>
+                        <Button
+                            buttonType="secundary"
+                            onClick={handleFinishOrder}
+                        >
+                            {order.status === 'pendente'
+                                ? 'Finalizar Pedido'
+                                : 'Restaurar Pedido'}
+                        </Button>
+                    </Flex>
+
+                    <Flex
+                        style={{
+                            justifyContent: 'flex-end',
+                            marginTop: '2rem',
+                        }}
+                    >
+                        <Button
+                            buttonType="outline"
+                            onClick={() => {
+                                closeModal();
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                        {order.status === 'pendente' && (
+                            <Button
+                                style={{ marginLeft: '2rem' }}
+                                onClick={() => {
+                                    alert('Será salvo!');
+                                    handleSaveOrder();
+                                    closeModal();
+                                }}
+                            >
+                                Salvar
+                            </Button>
+                        )}
+                    </Flex>
+                </Flex>
             </DialogContent>
         </Dialog>
     );

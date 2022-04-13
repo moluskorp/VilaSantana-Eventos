@@ -1,3 +1,4 @@
+import { useCallback, useMemo, useState } from 'react';
 import {
     DescriptionContent,
     DescriptionHeader,
@@ -16,16 +17,32 @@ import {
 
 interface ProductTableProps {
     items: Item[];
+    setItems: (item: Item[]) => Promise<void>;
+    status: 'pendente' | 'completo';
 }
 
 type Item = {
     name: string;
     quantity: number;
     priceFormatted: string;
+    price: number;
     total: string;
 };
 
-export default function ProductTable({ items }: ProductTableProps) {
+export default function ProductTable({
+    items,
+    setItems,
+    status,
+}: ProductTableProps) {
+    const handleDeleteItem = useCallback(
+        (name: string) => {
+            const newItems = items.filter(item => item.name !== name);
+            setItems(newItems);
+        },
+        [items, setItems],
+    );
+    const removeDisabled = useMemo(() => status !== 'pendente', [status]);
+
     return (
         <Nav>
             <Flex>
@@ -61,7 +78,12 @@ export default function ProductTable({ items }: ProductTableProps) {
                         <p>{item.total}</p>
                     </TotalContent>
                     <RemoveContent>
-                        <TrashIcon />
+                        <TrashIcon
+                            disabled={removeDisabled}
+                            onClick={() => {
+                                handleDeleteItem(item.name);
+                            }}
+                        />
                     </RemoveContent>
                 </Flex>
             ))}
