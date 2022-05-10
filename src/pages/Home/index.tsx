@@ -1,21 +1,14 @@
-import {
-    equalTo,
-    off,
-    onValue,
-    orderByChild,
-    query,
-    ref,
-} from 'firebase/database';
+import { equalTo, onValue, orderByChild, query, ref } from 'firebase/database';
 import React, {
-    createRef,
     useCallback,
     useEffect,
     useMemo,
     useRef,
     useState,
 } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
+import DeliveryCard from '../../components/DeliveryCard';
 import {
     DialogOrderDetails,
     ModalHandles,
@@ -24,7 +17,7 @@ import Divider from '../../components/Divider';
 import Footer from '../../components/Footer';
 import Header from '../../components/Header';
 import Input from '../../components/Input';
-import InputOrder from '../../components/InputOrder';
+import ScrollArea from '../../components/ScrollArea';
 import useAuth from '../../hooks/useAuth';
 import { useOrder } from '../../hooks/useOrder';
 import { database } from '../../services/firebase';
@@ -40,6 +33,14 @@ import {
     Nav,
     Pendentes,
 } from './style';
+import logoutIcon from '../../assets/logout.svg';
+import reportIcon from '../../assets/report.svg';
+import clientIcon from '../../assets/user.svg';
+import deliveryIcon from '../../assets/delivery.svg';
+import {
+    DialogSearchClient,
+    ModalDialogSearchClientHandles,
+} from '../../components/DialogSearchClient';
 
 type Order = {
     id: string;
@@ -48,12 +49,14 @@ type Order = {
     createdAt: Date;
     deliveryprice: number;
     deliveryDate: string;
+    deliveryDateFormatted: string;
     deliverytime: string;
     deliverytype: string;
     deliveryTypeFormatted: string;
     discount: number;
     money: boolean;
     total: number;
+    totalFormatted: string;
     card: boolean;
     pix: boolean;
     check: boolean;
@@ -85,11 +88,13 @@ type Address = {
 };
 
 export default function Home() {
+    const modalClientRef = useRef<ModalDialogSearchClientHandles>(null);
     const { createUserWithEmail, loginWithEmail } = useAuth();
-    const { getListFromDate, getListBetweenDates, deleteOrder } = useOrder();
+    const { getListBetweenDates, deleteOrder } = useOrder();
     const [orders, setOrders] = useState<Order[]>([] as Order[]);
     const [ordersFilter, setOrdersFilter] = useState<Order[]>(orders);
     const [searchInput, setSearchInput] = useState('');
+    const navigate = useNavigate();
     const modalRef = useRef<ModalHandles>(null);
     const orderRef = query(
         ref(database, 'orders'),
@@ -99,6 +104,8 @@ export default function Home() {
     const [orderStatus, setOrderStatus] = useState<'pendente' | 'completo'>(
         'pendente',
     );
+    const [time, setTime] = useState(new Date());
+
     useEffect(() => {
         const searchOrders = orders.filter(
             order => order.client.name.indexOf(searchInput) >= 0,
@@ -111,49 +118,52 @@ export default function Home() {
             const data = snapshot.val();
             const updatedOrders = getListBetweenDates(data);
             const formattedOrder = updatedOrders.map(order => {
+                const dateString = order.deliveryDate.toString();
+                const date = new Date(dateString.concat(' 03:00'));
                 return {
                     ...order,
                     deliveryTypeFormatted:
                         order.deliverytype[0].toUpperCase() +
                         order.deliverytype.substring(1),
+                    deliveryDateFormatted: formatDate(date),
+                    totalFormatted: formatPrice(order.total),
                 };
             });
-            setOrders(formattedOrder);
+            const orderSort = formattedOrder.sort((a, b) => {
+                const deliveryA = Number(a.deliverytime.replace(':', '.'));
+                const deliveryB = Number(b.deliverytime.replace(':', '.'));
+                return deliveryA < deliveryB
+                    ? -1
+                    : deliveryA > deliveryB
+                    ? 1
+                    : 0;
+            });
+            setOrders(orderSort);
         });
+        const interval = setInterval(() => setTime(new Date()), 1000 * 60); // 1 minuto
+        return () => {
+            clearInterval(interval);
+        };
     }, []);
 
-    // useEffect(() => {
-    //     // getListBetweenDates(
-    //     //     new Date('2022-03-21 03:00'),
-    //     //     new Date('2022-03-24 03:00'),
-    //     // )
-    //     //     .then(result => {
-    //     //         if (result) {
-    //     //             setOrders(result);
-    //     //         }
-    //     //     })
-    //     //     .catch(err => {
-    //     //         const error = errorResolverFirebase(err);
-    //     //         alert(error);
-    //     //     });
-    // }, [getListFromDate, getListBetweenDates]);
-
-    const ordersFormatted = useMemo(() => {
-        return ordersFilter.map(order => {
-            const dateString = order.deliveryDate.toString();
-            const date = dateString.concat(' 03:00');
-            const deliveryDateDate = new Date(date);
-            return {
-                ...order,
-                deliveryDateFormatted: formatDate(deliveryDateDate),
-                totalFormatted: formatPrice(order.total),
-            };
+    const deliveryStatus = useMemo(() => {
+        const hourNow = time.getHours();
+        const minutesNow = time.getMinutes();
+        const hourNowComplete = Number(`${hourNow}.${minutesNow}`);
+        const deliveryLate: Order | undefined = orders.find(order => {
+            const orderHour = Number(order.deliverytime.replace(':', '.'));
+            return orderHour < hourNowComplete && order.status === 'pendente';
         });
-    }, [ordersFilter]);
+        const nextDelivery: Order | undefined = orders.find(order => {
+            const orderHour = Number(order.deliverytime.replace(':', '.'));
+            return orderHour > hourNowComplete && order.status === 'pendente';
+        });
+        return { deliveryLate, nextDelivery };
+    }, [orders, time]);
 
     const ordersSepareted = useMemo(() => {
-        return ordersFormatted.filter(order => order.status === orderStatus);
-    }, [ordersFormatted, orderStatus]);
+        return ordersFilter.filter(order => order.status === orderStatus);
+    }, [ordersFilter, orderStatus]);
 
     const totalSells = useMemo(() => {
         return formatPrice(
@@ -199,33 +209,21 @@ export default function Home() {
         <>
             <Header />
             <Nav>
-                <Container>
+                <Container style={{ flexDirection: 'row' }}>
                     <Flex
                         style={{
-                            width: '670px',
+                            width: '41.875rem',
+                            height: '100%',
                             flexDirection: 'column',
                         }}
                     >
                         <h1>Oi, Molusko</h1>
                         <Flex
                             style={{
-                                marginTop: '1.5rem',
                                 width: '100%',
                                 justifyContent: 'space-between',
                             }}
-                        >
-                            <Link to="/oi">
-                                <Button onClick={handleLogin}>
-                                    Novo pedido
-                                </Button>
-                            </Link>
-                            <Button onClick={handleCreateUser}>
-                                Cadastro de Clientes
-                            </Button>
-                        </Flex>
-                        {/* <Button onClick={handleLogin}>
-                            Pedidos Realizados
-                        </Button> */}
+                        />
                         <Flex style={{ marginTop: '1rem' }}>
                             <h3>Entregas do dia</h3>
                         </Flex>
@@ -274,60 +272,145 @@ export default function Home() {
                             />
                             <Divider />
                         </Flex>
-                        {ordersSepareted.map(order => (
-                            <React.Fragment key={order.id}>
-                                <DialogOrderDetails
-                                    onDelete={(id: string) => {
-                                        handleDeleteOrder(id);
-                                    }}
-                                    ref={modalRef}
-                                    order={order}
-                                >
-                                    <ContainerOrders
-                                        onClick={() => {
-                                            modalRef.current?.setOrder(order);
-                                            modalRef.current?.openModal();
+                        <ScrollArea style={{ width: '100%', height: '77%' }}>
+                            {ordersSepareted.map(order => (
+                                <React.Fragment key={order.id}>
+                                    <DialogOrderDetails
+                                        onDelete={(id: string) => {
+                                            handleDeleteOrder(id);
                                         }}
+                                        ref={modalRef}
+                                        order={order}
                                     >
-                                        <Flex
-                                            style={{ flexDirection: 'column' }}
+                                        <ContainerOrders
+                                            onClick={() => {
+                                                modalRef.current?.setOrder(
+                                                    order,
+                                                );
+                                                modalRef.current?.openModal();
+                                            }}
                                         >
-                                            <h4>{order.client.name}</h4>
                                             <Flex
-                                                style={{ marginTop: '0.5rem' }}
+                                                style={{
+                                                    flexDirection: 'column',
+                                                }}
                                             >
-                                                <p>
-                                                    {
-                                                        order.deliveryTypeFormatted
-                                                    }
-                                                </p>
-                                                <p
+                                                <h4>{order.client.name}</h4>
+                                                <Flex
                                                     style={{
-                                                        marginLeft: '1rem',
+                                                        marginTop: '0.5rem',
                                                     }}
                                                 >
-                                                    {
-                                                        order.deliveryDateFormatted
-                                                    }
-                                                </p>
-                                                <p
-                                                    style={{
-                                                        marginLeft: '1rem',
-                                                    }}
-                                                >
-                                                    {order.deliverytime}
-                                                </p>
+                                                    <p>
+                                                        {
+                                                            order.deliveryTypeFormatted
+                                                        }
+                                                    </p>
+                                                    <p
+                                                        style={{
+                                                            marginLeft: '1rem',
+                                                        }}
+                                                    >
+                                                        {
+                                                            order.deliveryDateFormatted
+                                                        }
+                                                    </p>
+                                                    <p
+                                                        style={{
+                                                            marginLeft: '1rem',
+                                                        }}
+                                                    >
+                                                        {order.deliverytime}
+                                                    </p>
+                                                </Flex>
                                             </Flex>
-                                        </Flex>
 
-                                        <h1>{order.totalFormatted}</h1>
-                                    </ContainerOrders>
-                                </DialogOrderDetails>
-                            </React.Fragment>
-                        ))}
-                        <h2 style={{ marginTop: '1rem', marginLeft: 'auto' }}>
+                                            <h1>{order.totalFormatted}</h1>
+                                        </ContainerOrders>
+                                    </DialogOrderDetails>
+                                </React.Fragment>
+                            ))}
+                        </ScrollArea>
+                        <h2
+                            style={{
+                                marginTop: '1rem',
+                                marginLeft: 'auto',
+                            }}
+                        >
                             Total: {totalSells}
                         </h2>
+                    </Flex>
+                    <Flex
+                        style={{
+                            width: '29.25rem',
+                            height: '100%',
+                            marginLeft: '1rem',
+                            flexDirection: 'column',
+                        }}
+                    >
+                        <DeliveryCard
+                            type="late"
+                            deliveryStatus={deliveryStatus.deliveryLate}
+                            onClick={() => {
+                                if (deliveryStatus.deliveryLate) {
+                                    modalRef.current?.setOrder(
+                                        deliveryStatus.deliveryLate,
+                                    );
+                                    modalRef.current?.openModal();
+                                }
+                            }}
+                        />
+                        <DeliveryCard
+                            type="next"
+                            style={{ marginTop: '1.5rem' }}
+                            deliveryStatus={deliveryStatus.nextDelivery}
+                            onClick={() => {
+                                if (deliveryStatus.nextDelivery) {
+                                    modalRef.current?.setOrder(
+                                        deliveryStatus.nextDelivery,
+                                    );
+                                    modalRef.current?.openModal();
+                                }
+                            }}
+                        />
+                        <Divider style={{ marginTop: '3rem' }} />
+                        <Button
+                            icon={deliveryIcon}
+                            style={{ marginTop: '2.5rem' }}
+                            onClick={() => {
+                                navigate('../oi');
+                            }}
+                        >
+                            Nova entrega
+                        </Button>
+                        <DialogSearchClient ref={modalClientRef} canCancel />
+                        <Button
+                            icon={clientIcon}
+                            buttonType="secundary"
+                            style={{ marginTop: '1.5rem' }}
+                            onClick={() => {
+                                modalClientRef.current?.openModal();
+                            }}
+                        >
+                            Cadastro de Cliente
+                        </Button>
+                        <Button
+                            icon={reportIcon}
+                            buttonType="borderSecundary"
+                            style={{ marginTop: '1.5rem' }}
+                            onClick={() => {
+                                navigate('../reports');
+                            }}
+                        >
+                            Resumo de Vendas
+                        </Button>
+                        <Button
+                            icon={logoutIcon}
+                            buttonType="borderPrimary"
+                            style={{ marginTop: '1.5rem' }}
+                        >
+                            Fazer LogOff
+                        </Button>
                     </Flex>
                 </Container>
             </Nav>

@@ -1,5 +1,13 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { ReactNode, useEffect, useState } from 'react';
+import {
+    forwardRef,
+    ForwardRefRenderFunction,
+    ReactNode,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useState,
+} from 'react';
 import { useClient } from '../../hooks/useClient';
 import { ModalProvider, useModal } from '../../hooks/useModal';
 import Button from '../Button';
@@ -53,8 +61,24 @@ function Content({ children, ...props }: ContentProps) {
     );
 }
 
-export default function DialogSearchClient() {
-    const { open, setOpen } = useModal();
+export interface ModalDialogSearchClientHandles {
+    openModal: () => void;
+    closeModal: () => void;
+}
+
+interface DialogSearchClientCustomProps {
+    canCancel: boolean;
+}
+
+type DialogSearchClientProps = ForwardRefRenderFunction<
+    ModalDialogSearchClientHandles,
+    DialogSearchClientCustomProps
+>;
+
+const DialogSearchClientBase: DialogSearchClientProps = function (
+    { canCancel: cancel }: DialogSearchClientCustomProps,
+    ref,
+) {
     const { client } = useClient();
     const Dialog = DialogPrimitive.Root;
     // const DialogTrigger = DialogPrimitive.Trigger;
@@ -62,14 +86,24 @@ export default function DialogSearchClient() {
     const DialogTitle = StyledTitle;
     const DialogDescription = StyledDescription;
     const DialogClose = DialogPrimitive.Close;
+    const [open, setOpen] = useState(false);
+    const [canCancel, setCanCancel] = useState(cancel);
     const [value, setValue] = useState('');
     const [result, setResult] = useState<Client[]>([]);
     const [names, setNames] = useState<JsonProps[]>([]);
 
+    useImperativeHandle(ref, () => {
+        return {
+            openModal: () => {
+                setOpen(true);
+            },
+            closeModal: () => {
+                setOpen(false);
+            },
+        };
+    });
+
     useEffect(() => {
-        if (client) {
-            setOpen(false);
-        }
         fetch(
             'https://vilsantana-eventos-default-rtdb.firebaseio.com/clients.json',
         )
@@ -104,13 +138,13 @@ export default function DialogSearchClient() {
         }
     }, [value, names]);
 
-    function handleCloseModal() {
-        if (client) {
+    const handleCloseModal = useCallback(() => {
+        if (canCancel) {
             setOpen(false);
-        } else {
+        } else if (!client) {
             alert('Primeiro selecione um cliente');
         }
-    }
+    }, [canCancel, client]);
 
     return (
         <ModalProvider>
@@ -129,7 +163,12 @@ export default function DialogSearchClient() {
                         value={value}
                     />
                     {result.map(resulta => (
-                        <ClientSearchDiv key={resulta.id} client={resulta} />
+                        <ClientSearchDiv
+                            key={resulta.id}
+                            client={resulta}
+                            setCanCancel={setCanCancel}
+                            closeModal={setOpen}
+                        />
                     ))}
                     <Flex
                         style={{
@@ -156,4 +195,6 @@ export default function DialogSearchClient() {
             </Dialog>
         </ModalProvider>
     );
-}
+};
+
+export const DialogSearchClient = forwardRef(DialogSearchClientBase);

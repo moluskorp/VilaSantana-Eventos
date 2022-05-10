@@ -1,9 +1,14 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { useMemo } from 'react';
 import logoImg from '../../assets/logo.png';
+import { formatPrice } from '../../util/format';
+import formatDate from '../../util/formatDate';
 
-type Order = {
+type Item = {
     name: string;
+    price: number;
+    quantity: number;
 };
 
 type Client = {
@@ -11,49 +16,44 @@ type Client = {
     cpf: string;
     name: string;
     whatsapp: string;
-    address: string;
-    number: string;
-    district: string;
-    complement: string;
-    city: string;
-    postalcode: string;
 };
 
-type Product = {
-    name: string;
-    price: number;
-    quantity: number;
-    subTotal: string;
+type Order = {
+    items: Item[];
+    client: Client;
+    deliverytype: string;
+    deliverytime: string;
+    deliveryDate: string;
+    total: number;
 };
 
-interface OrderReportProps {
-    client: Client | null | undefined;
-    products: Product[];
-    subTotal: number;
-    delivery: number;
-    discount: number;
-    total: string;
-}
-
-export default function OrderReport({
-    client,
-    products,
-    subTotal,
-    delivery,
-    discount,
-    total,
-}: OrderReportProps) {
+export default function SellsReport(
+    orders: Order[],
+    initialDate: string,
+    finalDate: string,
+) {
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-    const dados = products.map(product => [
+    const ordersSort = orders.sort((a, b) => {
+        const deliveryA = new Date(a.deliveryDate);
+        const deliveryB = new Date(b.deliveryDate);
+        return deliveryA < deliveryB ? -1 : deliveryA > deliveryB ? 1 : 0;
+    });
+
+    const dados = ordersSort.map(order => [
         {
-            text: product.name,
+            text: order.client.name,
             alignment: 'left',
         },
-        product.price,
-        product.quantity,
-        product.subTotal,
+        order.client.cpf,
+        order.deliverytype,
+        formatDate(new Date(order.deliveryDate)),
+        formatPrice(order.total),
     ]);
+
+    const total = formatPrice(
+        orders.reduce((acc, order) => acc + order.total, 0),
+    );
 
     const reportTitle = [
         {
@@ -90,14 +90,14 @@ export default function OrderReport({
                 ],
                 [
                     {
-                        text: 'Data do Orçamento: 04/03/2022',
+                        text: `Data Inicial: ${initialDate}`,
                         alignment: 'right',
                         margin: [0, 20, 20, 0],
                         fontSize: 10,
                         width: 'auto',
                     },
                     {
-                        text: 'Válido até: 04/03/2022',
+                        text: `Data Final: ${finalDate}`,
                         alignment: 'right',
                         margin: [0, 0, 20, 0],
                         fontSize: 10,
@@ -110,102 +110,21 @@ export default function OrderReport({
 
     const details = [
         {
-            text: 'Cliente',
-            alignment: 'left',
+            text: 'Relatório de Vendas',
+            alignment: 'center',
             fontSize: 14,
             margin: [20, 24, 0, 0],
             bold: true,
         },
         {
-            columns: [
-                {
-                    text: `Nome: ${client?.name}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    margin: [20, 8, 0, 0],
-                    width: '*',
-                },
-                {
-                    text: `CPF: ${client?.cpf}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    width: 'auto',
-                    margin: [20, 8, 0, 0],
-                },
-            ],
-        },
-        {
-            columns: [
-                {
-                    text: `Endereço: ${client?.address}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    margin: [20, 0, 0, 0],
-                    width: '*',
-                },
-                {
-                    text: `Número: ${client?.number}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    margin: [20, 0, 0, 0],
-                    width: 'auto',
-                },
-                {
-                    text: `Bairro: ${client?.district}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    width: 'auto',
-                    margin: [20, 0, 0, 0],
-                },
-            ],
-        },
-        {
-            columns: [
-                {
-                    text: `Cidade: ${client?.city}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    margin: [20, 0, 0, 0],
-                    width: '*',
-                },
-                {
-                    text: `UF: ${'SP'}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    width: 'auto',
-                    margin: [20, 0, 0, 0],
-                },
-                {
-                    text: `CEP: ${client?.postalcode}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    width: 'auto',
-                    margin: [20, 0, 0, 0],
-                },
-                {
-                    text: `Whatsapp: ${client?.whatsapp}`,
-                    alignment: 'left',
-                    fontSize: 12,
-                    width: 'auto',
-                    margin: [20, 0, 0, 0],
-                },
-            ],
-        },
-        {
-            text: 'Orçamento',
-            alignment: 'center',
-            fontSize: 14,
-            margin: [0, 24, 0, 0],
-            bold: true,
-        },
-        {
             table: {
-                widths: ['*', 'auto', 'auto', 'auto'],
+                widths: ['*', 'auto', 'auto', 'auto', 'auto'],
                 body: [
                     [
-                        { text: 'Produto', alignment: 'left' },
-                        'Preço',
-                        'Quantidade',
+                        { text: 'Cliente', alignment: 'left' },
+                        'CPF',
+                        'Tipo de Entrega',
+                        'Data da Entrega',
                         'Total',
                     ],
                     ...dados,
@@ -220,135 +139,12 @@ export default function OrderReport({
             },
         },
         {
-            table: {
-                widths: ['*', 60, 157],
-                body: [
-                    [
-                        { text: '', border: [false, false, false, false] },
-                        {
-                            text: 'Sub-Total',
-                            alignment: 'left',
-                            border: [true, false, false, true],
-                            fillColor:
-                                products.length % 2 !== 0 ? '#CCCCCC' : null,
-                        },
-                        {
-                            text: subTotal,
-                            border: [false, false, true, true],
-                            fillColor:
-                                products.length % 2 !== 0 ? '#CCCCCC' : null,
-                        },
-                    ],
-                ],
-                alignment: 'right',
-            },
+            text: `Total: ${total}`,
+            fontSize: 20,
             alignment: 'right',
-        },
-        {
-            table: {
-                widths: ['*', 60, 157],
-                body: [
-                    [
-                        {
-                            text: '',
-                            border: [false, false, false, false],
-                        },
-                        {
-                            text: 'Frete',
-                            alignment: 'left',
-                            border: [true, false, false, true],
-                            fillColor:
-                                products.length % 2 === 0 ? '#CCCCCC' : null,
-                        },
-                        {
-                            text: delivery,
-                            border: [false, false, true, true],
-                            fillColor:
-                                products.length % 2 === 0 ? '#CCCCCC' : null,
-                        },
-                    ],
-                ],
-            },
-            alignment: 'right',
-        },
-        {
-            table: {
-                widths: ['*', 60, 157],
-                body: [
-                    [
-                        { text: '', border: [false, false, false, false] },
-                        {
-                            text: 'Desconto',
-                            alignment: 'left',
-                            border: [true, false, false, true],
-                            fillColor:
-                                products.length % 2 !== 0 ? '#CCCCCC' : null,
-                        },
-                        {
-                            text: discount,
-                            border: [false, false, true, true],
-                            fillColor:
-                                products.length % 2 !== 0 ? '#CCCCCC' : null,
-                        },
-                    ],
-                ],
-            },
-            alignment: 'right',
-        },
-        {
-            table: {
-                widths: ['*', 60, 157],
-                body: [
-                    [
-                        { text: '', border: [false, false, false, false] },
-                        {
-                            text: 'Total',
-                            alignment: 'left',
-                            bold: true,
-                            fontSize: 16,
-                            border: [true, false, false, true],
-                            fillColor:
-                                products.length % 2 === 0 ? '#CCCCCC' : null,
-                        },
-                        {
-                            text: total,
-                            alignment: 'right',
-                            bold: true,
-                            fontSize: 16,
-                            border: [false, false, true, true],
-                            fillColor:
-                                products.length % 2 === 0 ? '#CCCCCC' : null,
-                        },
-                    ],
-                ],
-                alignment: 'right',
-            },
-            alignment: 'right',
+            margin: [0, 20, 0, 0],
         },
     ];
-
-    function Footer(currentPage: number, pageCount: number) {
-        return [
-            {
-                columns: [
-                    {
-                        text: 'Desenvolvido por Moltech, Whatsapp: (16) 99604-0016',
-                        fontSize: 12,
-                        alignment: 'left',
-                        margin: [20, 10, 0, 0],
-                        width: '*',
-                    },
-                    {
-                        text: `Página ${currentPage} / ${pageCount}`,
-                        fontSize: 8,
-                        alignment: 'right',
-                        margin: [0, 10, 20, 0],
-                        width: 'auto',
-                    },
-                ],
-            },
-        ];
-    }
 
     const docDefinitions = {
         pageSize: 'A4',
@@ -356,7 +152,7 @@ export default function OrderReport({
 
         header: [reportTitle],
         content: [details],
-        footer: Footer,
+        footer: [],
     };
 
     pdfMake.createPdf(docDefinitions).open();

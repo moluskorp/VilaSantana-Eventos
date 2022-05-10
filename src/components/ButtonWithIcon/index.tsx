@@ -1,26 +1,17 @@
 import { ButtonHTMLAttributes } from 'react';
-import { Container, Icon, Nav } from './style';
+import { Container, Nav } from './style';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-    buttonType?:
-        | 'primary'
-        | 'secundary'
-        | 'outline'
-        | 'borderPrimary'
-        | 'borderSecundary';
+    buttonType?: 'primary' | 'secundary' | 'outline';
     className?: string;
     containerStyle?: object;
-    icon?: string;
-    iconStyle?: object;
 }
 
-export default function Button({
+export default function ButtonWithIcon({
     children,
     buttonType = 'primary',
     className,
     containerStyle,
-    icon,
-    iconStyle,
     ...rest
 }: ButtonProps): JSX.Element {
     return (
@@ -30,10 +21,7 @@ export default function Button({
             buttonType={buttonType}
             {...rest}
         >
-            <Nav>
-                {children}
-                {!!icon && <Icon icon={icon} style={iconStyle} />}
-            </Nav>
+            <Nav>{children}</Nav>
         </Container>
     );
 }

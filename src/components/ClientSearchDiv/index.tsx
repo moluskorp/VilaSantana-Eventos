@@ -1,5 +1,11 @@
-import { useCallback } from 'react';
+import {
+    ForwardedRef,
+    ForwardRefRenderFunction,
+    RefForwardingComponent,
+    useCallback,
+} from 'react';
 import { useClient } from '../../hooks/useClient';
+import { ModalDialogSearchClientHandles } from '../DialogSearchClient';
 import { Container, Cpf, Name } from './style';
 
 type Client = {
@@ -17,14 +23,22 @@ type Client = {
 
 interface ClientSearchDiv {
     client: Client;
+    setCanCancel: (condition: boolean) => void;
+    closeModal: (open: boolean) => void;
 }
 
-export default function ClientSearchDiv({ client }: ClientSearchDiv) {
+export default function ClientSearchDiv({
+    client,
+    setCanCancel,
+    closeModal,
+}: ClientSearchDiv) {
     const { changeClient } = useClient();
 
     const handleSelectClient = useCallback(() => {
         changeClient(client);
-    }, [changeClient, client]);
+        setCanCancel(true);
+        closeModal(true);
+    }, [changeClient, client, setCanCancel, closeModal]);
 
     return (
         <Container onClick={handleSelectClient}>

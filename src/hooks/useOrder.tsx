@@ -136,6 +136,10 @@ interface OrderContextData {
     getListBetweenDates: (data: any) => Order[];
     deleteOrder: (id: string) => Promise<void>;
     updateOrderOnDbWithOrder: (order: Order) => Promise<void>;
+    updateStatusOrderWithId: (
+        id: string,
+        status: 'pendente' | 'completo',
+    ) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextData>({} as OrderContextData);
@@ -313,6 +317,19 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
         }
     }, []);
 
+    const updateStatusOrderWithId = useCallback(
+        async (id: string, status: 'pendente' | 'completo') => {
+            try {
+                await update(ref(database, `orders/${id}`), {
+                    status,
+                });
+            } catch (err: any) {
+                console.log(err.message);
+            }
+        },
+        [],
+    );
+
     const getListFromDate = useCallback(async (date: Date) => {
         try {
             const dbRefQ = query(
@@ -436,6 +453,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             updateOrderOnDb,
             setOrder,
             updateOrderOnDbWithOrder,
+            updateStatusOrderWithId,
         }),
         [
             removeItem,
@@ -452,6 +470,7 @@ export function OrderProvider({ children }: OrderProviderProps): JSX.Element {
             deleteOrder,
             updateOrderOnDb,
             updateOrderOnDbWithOrder,
+            updateStatusOrderWithId,
         ],
     );
 

@@ -12,12 +12,13 @@ import {
 
 interface ScrollAreaProps {
     children: ReactNode;
+    style?: object;
 }
 
-export default function ScrollArea({ children }: ScrollAreaProps) {
+export default function ScrollArea({ children, style }: ScrollAreaProps) {
     const { order } = useOrder();
     return (
-        <StyledScrollArea>
+        <StyledScrollArea style={style}>
             <StyledViewport>
                 <Box style={{ padding: '15px 20px' }}>{children}</Box>
             </StyledViewport>

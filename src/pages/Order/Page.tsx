@@ -45,11 +45,12 @@ import { formatPrice } from '../../util/format';
 import { useOrder } from '../../hooks/useOrder';
 import DialogAddProductOrder from '../../components/DialogAddProductOrder';
 import stringToNumber from '../../util/stringToNumber';
-import DialogSearchClient from '../../components/DialogSearchClient';
+import {
+    DialogSearchClient,
+    ModalDialogSearchClientHandles,
+} from '../../components/DialogSearchClient';
 import useAuth from '../../hooks/useAuth';
 import { useClient } from '../../hooks/useClient';
-import { useModal } from '../../hooks/useModal';
-import OrderReport from '../../reports/OrderReport';
 import { useYupValidationResolver } from '../../util/useYupValidationResolver';
 import ScrollArea from '../../components/ScrollArea';
 import DialogSearchSeller from '../../components/DialogSearchSeller';
@@ -83,10 +84,10 @@ const payment = {
 
 export default function Page() {
     const formRef = useRef<FormHandles>(null);
+    const modalClientRef = useRef<ModalDialogSearchClientHandles>(null);
     const { user } = useAuth();
     const { client } = useClient();
     const navigate = useNavigate();
-    const { open, setOpen } = useModal();
     const [modalSellerOpen, setModalSellerOpen] = useState(false);
     const [selectedDay, setSelectedDay] = useState(new Date());
     const [tipoEntrega, setTipoEntrega] = useState<'entrega' | 'retirada'>(
@@ -134,6 +135,14 @@ export default function Page() {
             setValue('whats', client.whatsapp);
         }
     }, [client, setValue, cleanFieldsClient]);
+
+    useEffect(() => {
+        if (!client) {
+            modalClientRef.current?.openModal();
+        } else {
+            modalClientRef.current?.closeModal();
+        }
+    }, [client]);
 
     const { errors } = formState;
 
@@ -227,29 +236,6 @@ export default function Page() {
         })();
     }
 
-    // const handleBudget = useCallback(async () => {
-    //     await handleSubmit(async data => {
-    //         console.log(data);
-    //     });
-    //     const order = {
-    //         client,
-    //         products: itensFormatted,
-    //         total,
-    //         subTotal: 100,
-    //         delivery: deliveryTotal,
-    //         discount: discountTotal,
-    //     };
-    //     console.log(order);
-    //     // OrderReport(order);
-    // }, [
-    //     client,
-    //     deliveryTotal,
-    //     itensFormatted,
-    //     total,
-    //     discountTotal,
-    //     handleSubmit,
-    // ]);
-
     const handleWhatsapp = useCallback(() => {
         const celular = `55${client?.whatsapp}`;
         const headerMessage = `Olá *${client?.name}* agradececemos o seu *pedido* segue a lista de produtos e o total\n\n`;
@@ -306,10 +292,13 @@ export default function Page() {
                                 <strong>{client?.cpf}</strong>
                             </div>
                         </ContainerVendedor>
-                        <DialogSearchClient />
+                        <DialogSearchClient
+                            ref={modalClientRef}
+                            canCancel={!!client}
+                        />
                         <Flex
                             onClick={() => {
-                                setOpen(true);
+                                modalClientRef.current?.openModal();
                             }}
                         >
                             <ChangeSeller>ALTERAR</ChangeSeller>
@@ -607,6 +596,8 @@ export default function Page() {
                                 marginTop: '1rem',
                                 marginLeft: '1rem',
                             }}
+                            type="button"
+                            onClick={handleWhatsapp}
                         >
                             Enviar Orçamento
                         </Button>
