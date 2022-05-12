@@ -7,6 +7,7 @@ interface ContainerProps {
         | 'outline'
         | 'borderPrimary'
         | 'borderSecundary';
+    loading?: boolean;
 }
 
 // eslint-disable-next-line
@@ -37,7 +38,7 @@ export const Container = styled.button<ContainerProps>`
 export const Nav = styled.div`
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 `;
 
 interface IconProps {

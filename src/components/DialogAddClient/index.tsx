@@ -1,7 +1,13 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { FormHandles } from '@unform/core';
-import { ReactNode, useCallback, useRef } from 'react';
-import { set, ref } from 'firebase/database';
+import {
+    forwardRef,
+    ForwardRefRenderFunction,
+    ReactNode,
+    useImperativeHandle,
+    useRef,
+    useState,
+} from 'react';
 import * as yup from 'yup';
 import { useForm } from 'react-hook-form';
 import {
@@ -32,11 +38,21 @@ type FormValues = {
     postalcode: string;
 };
 
-interface DialogAddClientProps {
+export interface ModalDialogAddClientHandles {
+    openModal: () => void;
+    closeModal: () => void;
+}
+
+interface DialogAddClientCustomProps {
     children: ReactNode;
 }
 
-interface ContentProps {
+type DialogAddClientProps = ForwardRefRenderFunction<
+    ModalDialogAddClientHandles,
+    DialogAddClientCustomProps
+>;
+
+interface ContentProps extends DialogPrimitive.DialogContentProps {
     children: ReactNode;
 }
 
@@ -49,17 +65,23 @@ function Content({ children, ...props }: ContentProps) {
     );
 }
 
-export default function DialogAddClient({
-    children,
-    ...props
-}: DialogAddClientProps) {
-    const {
-        changeClient,
-        client,
-        saveClientOnDb,
-        selectClientListOnDb,
-        selectClientOnDb,
-    } = useClient();
+const DialogAddClientBase: DialogAddClientProps = function (
+    { children }: DialogAddClientCustomProps,
+    ref,
+) {
+    const { changeClient, saveClientOnDb, selectClientOnDbByCpf } = useClient();
+    const [openModal, setOpenModal] = useState(false);
+
+    useImperativeHandle(ref, () => {
+        return {
+            openModal: () => {
+                setOpenModal(true);
+            },
+            closeModal: () => {
+                setOpenModal(false);
+            },
+        };
+    });
 
     const formRef = useRef<FormHandles>(null);
     const Dialog = DialogPrimitive.Root;
@@ -73,32 +95,48 @@ export default function DialogAddClient({
         name: yup.string().required('Nome Obrigatório'),
         address: yup.string().required('Favor preencher o endereço'),
         cpf: yup.string().required('Favor preencher o cpf'),
-    }); 
+    });
 
-    const { register, handleSubmit, formState, setError, setFocus, setValue } =
-        useForm<FormValues>({
+    const { register, handleSubmit, formState, setFocus } = useForm<FormValues>(
+        {
             resolver: useYupValidationResolver(schema),
-        });
+        },
+    );
 
     const { errors } = formState;
+    const [isAdding, setIsAdding] = useState(false);
 
     async function handleAddClient() {
         handleSubmit(async data => {
             try {
-                changeClient(data);
+                setIsAdding(true);
+                const clientExists = await selectClientOnDbByCpf(data.cpf);
+                if (clientExists) {
+                    alert('Cpf já cadastrado');
+                    return;
+                }
+                await changeClient(data);
                 await saveClientOnDb();
-                // Mandar pro firebase
-            } catch (err) {
+                setOpenModal(false);
+                // eslint-disable-next-line
+            } catch (err: any) {
                 const error = errorResolverFirebase(err);
                 alert(error);
+            } finally {
+                setIsAdding(false);
             }
         })();
     }
 
     return (
-        <Dialog>
+        <Dialog open={openModal}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
+            <DialogContent
+                onEscapeKeyDown={event => {
+                    event.preventDefault();
+                    setOpenModal(false);
+                }}
+            >
                 <DialogTitle>Adicionar Cliente</DialogTitle>
                 <DialogDescription>
                     Preencha os campos para adicionar um novo cliente
@@ -208,6 +246,11 @@ export default function DialogAddClient({
                                 marginLeft: 'auto',
                             }}
                             type="submit"
+                            loading={isAdding}
+                            loadingContainer={{
+                                width: '10rem',
+                                height: '1.25rem',
+                            }}
                         >
                             Adicionar novo cliente
                         </Button>
@@ -220,4 +263,6 @@ export default function DialogAddClient({
             </DialogContent>
         </Dialog>
     );
-}
+};
+
+export const DialogAddClient = forwardRef(DialogAddClientBase);

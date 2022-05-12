@@ -41,6 +41,8 @@ import {
     DialogSearchClient,
     ModalDialogSearchClientHandles,
 } from '../../components/DialogSearchClient';
+import { ClientProvider } from '../../hooks/useClient';
+import LoadingSpinner from '../../components/LoadingSpinner';
 
 type Order = {
     id: string;
@@ -206,7 +208,7 @@ export default function Home() {
     );
 
     return (
-        <>
+        <ClientProvider>
             <Header />
             <Nav>
                 <Container style={{ flexDirection: 'row' }}>
@@ -415,6 +417,6 @@ export default function Home() {
                 </Container>
             </Nav>
             <Footer />
-        </>
+        </ClientProvider>
     );
 }

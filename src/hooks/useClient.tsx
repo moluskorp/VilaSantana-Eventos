@@ -64,7 +64,7 @@ type Pagination = {
 
 interface ClientContextData {
     client: Client | null | undefined;
-    changeClient: (client: Client) => void;
+    changeClient: (client: Client) => Promise<void>;
     saveClientOnDb: () => Promise<void>;
     selectClientOnDb: (id: string) => Promise<void>;
     selectClientListOnDb: (pagination: Pagination) => Promise<Client[]>;
@@ -72,6 +72,7 @@ interface ClientContextData {
         name: string,
         pagination: Pagination,
     ) => Promise<Client[]>;
+    selectClientOnDbByCpf: (cpf: string) => Promise<Client[] | null>;
 }
 
 const ClientContext = createContext<ClientContextData>({} as ClientContextData);
@@ -79,22 +80,8 @@ const ClientContext = createContext<ClientContextData>({} as ClientContextData);
 export function ClientProvider({ children }: ClientProviderProps) {
     const [client, setClient] = useState<Client | null>();
 
-    useEffect(() => {
-        console.log(client);
-    }, [client]);
-
-    function changeClient(newClient: Client) {
-        if (!newClient) {
-            return;
-        }
-        if (!newClient?.id) {
-            // eslint-disable-next-line
-            newClient.id = uuidV4();
-        }
-        setClient(newClient);
-    }
-
     const saveClientOnDb = useCallback(async () => {
+        console.log('client', client);
         await set(ref(database, `clients/${client?.id}`), {
             cpf: client?.cpf,
             name: client?.name,
@@ -121,6 +108,65 @@ export function ClientProvider({ children }: ClientProviderProps) {
             console.log(err);
         }
     }, []);
+
+    const selectClientOnDbByCpf = useCallback(async (cpf: string) => {
+        try {
+            const dbRefQ = query(
+                ref(database, 'clients'),
+                orderByChild('cpf'),
+                startAt(cpf),
+                endAt(cpf),
+            );
+            const resultFirebase = await get(dbRefQ);
+            const result: FirebaseClient = resultFirebase.val();
+            if (result) {
+                const parsedClients = Object.entries(result).map(
+                    ([key, value]) => {
+                        return {
+                            id: key,
+                            cpf: value.cpf,
+                            name: value.name,
+                            whatsapp: value.whatsapp,
+                            address: value.address,
+                            number: value.number,
+                            district: value.district,
+                            complement: value.complement,
+                            city: value.city,
+                            postalcode: value.postalcode,
+                        };
+                    },
+                );
+                return parsedClients;
+            }
+            return null;
+        } catch (err) {
+            console.log(err);
+            return null;
+        }
+    }, []);
+
+    const changeClient = useCallback(
+        async (newClient: Client) => {
+            if (!newClient) {
+                return;
+            }
+            if (newClient.id) {
+                setClient(newClient);
+                return;
+            }
+            const resultSearchCpf = await selectClientOnDbByCpf(newClient.cpf);
+            if (resultSearchCpf) {
+                setClient(resultSearchCpf[0]);
+                return;
+            }
+            if (!newClient?.id) {
+                // eslint-disable-next-line
+                newClient.id = uuidV4();
+            }
+            setClient(newClient);
+        },
+        [selectClientOnDbByCpf],
+    );
 
     const selectClientListByNameOnDb = useCallback(
         async (
@@ -243,8 +289,17 @@ export function ClientProvider({ children }: ClientProviderProps) {
             selectClientOnDb,
             selectClientListOnDb,
             selectClientListByNameOnDb,
+            selectClientOnDbByCpf,
         }),
-        [client, saveClientOnDb, selectClientOnDb, selectClientListOnDb],
+        [
+            client,
+            saveClientOnDb,
+            selectClientOnDb,
+            selectClientListOnDb,
+            changeClient,
+            selectClientListByNameOnDb,
+            selectClientOnDbByCpf,
+        ],
     );
 
     return (

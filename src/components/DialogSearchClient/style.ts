@@ -78,12 +78,11 @@ export const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 
-    td, th {
-        border 1px solid rgba(0,0,0,0.3);
+    td,
+    th {
+        border: 1px solid rgba(0, 0, 0, 0.3);
         text-align: left;
         padding: 0.5rem;
-
-
     }
 
     tr:nth-child(even) {
@@ -93,8 +92,8 @@ export const Table = styled.table`
     tr {
         & + tr {
             &:hover {
-            background-color: rgba(0,0,0,0.3);
-            cursor: pointer;
+                background-color: rgba(0, 0, 0, 0.3);
+                cursor: pointer;
             }
         }
     }

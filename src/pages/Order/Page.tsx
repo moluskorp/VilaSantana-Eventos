@@ -200,40 +200,38 @@ export default function Page() {
 
     const total = useMemo(() => formatPrice(totalNumber), [totalNumber]);
 
-    async function handleBudget() {
-        await handleSubmit(async data => {
-            try {
-                if (client) {
-                    const finalClient = {
-                        id: client.id,
-                        name: data.name,
-                        address: {
-                            street: data.address,
-                            number: data.number,
-                            district: data.district,
-                            complement: data.complement,
-                            city: data.city,
-                            postalcode: data.postalcode,
-                        },
-                        cpf: client.cpf,
-                        whatsapp: data.whats,
-                    };
+    async function handleBudget(data: FormValues) {
+        try {
+            if (client) {
+                const finalClient = {
+                    id: client.id,
+                    name: data.name,
+                    address: {
+                        street: data.address,
+                        number: data.number,
+                        district: data.district,
+                        complement: data.complement,
+                        city: data.city,
+                        postalcode: data.postalcode,
+                    },
+                    cpf: client.cpf,
+                    whatsapp: data.whats,
+                };
 
-                    await saveOrderOnDb(
-                        finalClient,
-                        selectedDay,
-                        data.deliveryhour,
-                        payment,
-                        tipoEntrega,
-                    );
+                await saveOrderOnDb(
+                    finalClient,
+                    selectedDay,
+                    data.deliveryhour,
+                    payment,
+                    tipoEntrega,
+                );
 
-                    navigate('/');
-                }
-            } catch (err: any) {
-                const error = errorResolverFirebase(err);
-                alert(error);
+                navigate('/');
             }
-        })();
+        } catch (err: any) {
+            const error = errorResolverFirebase(err);
+            alert(error);
+        }
     }
 
     const handleWhatsapp = useCallback(() => {
@@ -264,14 +262,17 @@ export default function Page() {
     ]);
 
     const handleFinish = useCallback(
-        event => {
+        async event => {
+            await handleSubmit(async data => {
+                handleBudget(data);
+                const sendWhatsapp = confirm(
+                    'Deseja enviar o faturamento para o whatsapp do cliente?',
+                );
+                if (sendWhatsapp) {
+                    handleWhatsapp();
+                }
+            })();
             // eslint-disable-next-line
-            const sendWhatsapp = confirm(
-                'Deseja enviar o faturamento para o whatsapp do cliente?',
-            );
-            if (sendWhatsapp) {
-                handleWhatsapp();
-            }
         },
         [handleWhatsapp],
     );
@@ -308,7 +309,7 @@ export default function Page() {
                         <HomeIcon />
                         <strong>ENDEREÇO DE ENTREGA</strong>
                     </ContainerMaior>
-                    <Form ref={formRef} onSubmit={handleBudget}>
+                    <Form ref={formRef} onSubmit={handleFinish}>
                         <ContainerLineInput>
                             <InputOrder
                                 name="name"

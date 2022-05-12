@@ -6,13 +6,17 @@ import {
     useCallback,
     useEffect,
     useImperativeHandle,
+    useRef,
     useState,
 } from 'react';
 import { useClient } from '../../hooks/useClient';
-import { ModalProvider, useModal } from '../../hooks/useModal';
+import { ModalProvider } from '../../hooks/useModal';
 import Button from '../Button';
 import ClientSearchDiv from '../ClientSearchDiv';
-import DialogAddClient from '../DialogAddClient';
+import {
+    DialogAddClient,
+    ModalDialogAddClientHandles,
+} from '../DialogAddClient';
 import Input from '../Input';
 import {
     CloseIcon,
@@ -79,13 +83,13 @@ const DialogSearchClientBase: DialogSearchClientProps = function (
     { canCancel: cancel }: DialogSearchClientCustomProps,
     ref,
 ) {
+    const modalAddClientRef = useRef<ModalDialogAddClientHandles>(null);
     const { client } = useClient();
     const Dialog = DialogPrimitive.Root;
     // const DialogTrigger = DialogPrimitive.Trigger;
     const DialogContent = Content;
     const DialogTitle = StyledTitle;
     const DialogDescription = StyledDescription;
-    const DialogClose = DialogPrimitive.Close;
     const [open, setOpen] = useState(false);
     const [canCancel, setCanCancel] = useState(cancel);
     const [value, setValue] = useState('');
@@ -112,7 +116,7 @@ const DialogSearchClientBase: DialogSearchClientProps = function (
                 setNames(responseData);
             })
             .catch(err => {
-                console.log(err);
+                alert(err);
             });
     }, [client, setOpen]);
 
@@ -120,10 +124,10 @@ const DialogSearchClientBase: DialogSearchClientProps = function (
         if (value.length > 0) {
             setResult([]);
             const searchQuery = value.toLowerCase();
+            // es-lint-disable-next-line
             for (const key in names) {
                 const name = names[key].name.toLowerCase() as string;
                 const searchSuccess = name.indexOf(searchQuery) !== -1;
-                console.log(`Search Success: ${searchSuccess}`);
 
                 if (searchSuccess) {
                     const people = {
@@ -177,8 +181,13 @@ const DialogSearchClientBase: DialogSearchClientProps = function (
                             marginTop: '1rem',
                         }}
                     >
-                        <DialogAddClient>
-                            <Button buttonType="secundary">
+                        <DialogAddClient ref={modalAddClientRef}>
+                            <Button
+                                buttonType="secundary"
+                                onClick={() => {
+                                    modalAddClientRef.current?.openModal();
+                                }}
+                            >
                                 Cadastrar novo cliente
                             </Button>
                         </DialogAddClient>
